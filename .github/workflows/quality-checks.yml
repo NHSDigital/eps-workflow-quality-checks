@@ -9,7 +9,7 @@ on:
       node_version:
         description: The version of node used in this project.
         required: true
-        type: number
+        type: string
 
 jobs:
   quality_checks:
@@ -21,7 +21,7 @@ jobs:
           ref: ${{ env.BRANCH_NAME }}
           fetch-depth: 0
 
-      # Using a specific commit SHA for stability
+      # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
         uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
         with:
@@ -50,11 +50,12 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           echo "@nhsdigital:registry=https://npm.pkg.github.com" >> ~/.npmrc
 
-      - name: Install dependencies
-        run: make install
+      - name: make install
+        run: |
+          make install
 
       - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@main
+        uses: NHSDigital/eps-action-sbom@npm20_version
         with:
           node_version: {{ inputs.node_version }}
 
@@ -80,7 +81,7 @@ jobs:
         if: failure()
         run: find cfn_guard_output -type f -print0 | xargs -0 cat
 
-      - name: Upload cfn-guard output
+      - name: Upload cfn_guard_output
         if: failure()
         uses: actions/upload-artifact@v4
         with:
