@@ -57,7 +57,7 @@ jobs:
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@npm20_version
         with:
-          node_version: {{ inputs.node_version }}
+          node_version: ${{ inputs.node_version }}
 
       - name: Upload SBOMs
         uses: actions/upload-artifact@v3
