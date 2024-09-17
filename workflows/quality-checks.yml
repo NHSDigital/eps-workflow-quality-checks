@@ -9,7 +9,7 @@ on:
       node_version:
         description: The version of node used in this project.
         required: true
-        type: number
+        type: string
 
 jobs:
   quality_checks:
