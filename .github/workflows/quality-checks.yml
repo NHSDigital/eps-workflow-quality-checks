@@ -41,7 +41,7 @@ jobs:
         with:
           asdf_branch: v0.14.1
         env:
-          PYTHON_CONFIGURE_OPTS: --enable-shared 
+          PYTHON_CONFIGURE_OPTS: --enable-shared
 
       - name: Setting up .npmrc
         env:
