@@ -108,7 +108,10 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           ignore_paths: >-
-            **/*test*
+            *test*
+            .venv
+            node_modules
+            .git
 
       - name: Check for CloudFormation templates
         id: check_cfn_templates
