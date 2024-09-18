@@ -71,6 +71,7 @@ jobs:
 
           # Install pip-licenses if not already installed
           if ! poetry run pip show pip-licenses > /dev/null 2>&1; then
+            echo "pip-licenses is not detected. Installing..."
             poetry run pip install pip-licenses
           fi
 
@@ -78,6 +79,7 @@ jobs:
           INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
 
           if [[ -z $INCOMPATIBLE_LIBS ]]; then
+              echo "Checked licenses are OK"
               exit 0
           else
               echo "The following libraries were found which are not compatible with this project's license:"
