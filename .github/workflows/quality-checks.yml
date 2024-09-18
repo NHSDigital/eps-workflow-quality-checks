@@ -101,6 +101,9 @@ jobs:
       - name: Run linting for TypeScript and Python
         run: make lint
 
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
