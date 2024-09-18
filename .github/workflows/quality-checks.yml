@@ -55,7 +55,7 @@ jobs:
           make install
 
       - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@npm20_version
+        uses: NHSDigital/eps-action-sbom@v1
         with:
           node_version: ${{ inputs.node_version }}
 
