@@ -55,7 +55,7 @@ jobs:
           make install
 
       - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@npm20_version
+        uses: NHSDigital/eps-action-sbom@main
         with:
           node_version: ${{ inputs.node_version }}
 
@@ -68,8 +68,27 @@ jobs:
       - name: Check licenses
         run: make check-licenses
 
-      - name: Run linting
+      - name: Run linting for TypeScript and Python
         run: make lint
+
+      - name: Check for CloudFormation templates
+        id: check_cfn_templates
+        run: |
+          if [ -d "cloudformation" ] || [ -d "SAMtemplates" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install cfn-lint
+        if: steps.check_cfn_templates.outputs.exists == 'true'
+        run: pip install cfn-lint
+
+      - name: Run cfn-lint
+        if: steps.check_cfn_templates.outputs.exists == 'true'
+        run: |
+          cfn-lint -I "cloudformation/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
+          cfn-lint -I "SAMtemplates/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
 
       - name: Run unit tests
         run: make test
