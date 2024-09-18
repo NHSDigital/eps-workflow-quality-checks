@@ -99,6 +99,12 @@ jobs:
       - name: Run linting for TypeScript and Python
         run: make lint
 
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          ignore_paths: >-
+            **/*test*
+
       - name: Check for CloudFormation templates
         id: check_cfn_templates
         run: |
