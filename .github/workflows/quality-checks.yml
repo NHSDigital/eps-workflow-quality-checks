@@ -94,6 +94,7 @@ jobs:
 
       - name: Upload SBOMs
         uses: actions/upload-artifact@v3
+        if: success() || failure()
         with:
           name: SBOMS
           path: '**/*sbom*.json'
