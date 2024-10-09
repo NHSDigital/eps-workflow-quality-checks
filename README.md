@@ -6,7 +6,9 @@ A workflow to run the quality checks for EPS repositories. The steps executed by
 - **Run Linting**
 - **Run Unit Tests**
 - **SonarCloud Scan**: Performs code analysis using SonarCloud to detect quality issues and vulnerabilities.
-- **Validate CloudFormation Templates** (*Conditional*): If CloudFormation or AWS SAM templates are present, runs `cfn-lint` and `cfn-guard` to validate templates against AWS best practices and security rules.
+- **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
+- **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
+- **Check Licenses**: Runs `make check-licenses`.
 - **Check Python Licenses** (*Conditional*): If the project uses Poetry, scans Python dependencies for incompatible licenses.
 
 # Usage
@@ -24,6 +26,8 @@ In order to run, these `make` commands must be present. They may be mocked, if t
 - `install`
 - `lint`
 - `test`
+- `check-licenses`
+- `cdk-synth` - only needed if packages/cdk folder exists
 
 ## Environment variables
 
