@@ -96,7 +96,7 @@ jobs:
             echo "****************"
             echo "Project does not have cloudformation templates"
             echo "****************"
-            echo "cfexists=false" >> $GITHUB_OUTPUT
+            echo "cf_exists=false" >> $GITHUB_OUTPUT
           fi
   
       - name: Check for cdk
@@ -151,7 +151,7 @@ jobs:
             .git
 
       - name: Run cfn-lint
-        if: steps.check_sam_templates.outputs.exists == 'true' || steps.check_cf_templates.outputs.exists == 'true'
+        if: steps.check_sam_templates.outputs.sam_exists == 'true' || steps.check_cf_templates.outputs.cf_exists == 'true'
         run: |
           pip install cfn-lint
           cfn-lint -I "cloudformation/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
@@ -161,12 +161,12 @@ jobs:
         run: make test
   
       - name: Run cdk-synth
-        if: steps.check_cdk.outputs.exists == 'true'
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
           make cdk-synth
   
       - name: Install AWS SAM CLI
-        if: steps.check_sam_templates.outputs.exists == 'true'
+        if: steps.check_sam_templates.outputs.sam_exists == 'true'
         run: |
           pip install aws-sam-cli
 
@@ -186,7 +186,7 @@ jobs:
           mkdir -p cfn_guard_output
 
       - name: Run cfn-guard script for sam templates
-        if: steps.check_sam_templates.outputs.exists == 'true'
+        if: steps.check_sam_templates.outputs.sam_exists == 'true'
         run: |
           #!/usr/bin/env bash
           set -eou pipefail
@@ -211,7 +211,7 @@ jobs:
           done
 
       - name: Run cfn-guard script for cloudformation templates
-        if: steps.check_cf_templates.outputs.exists == 'true'
+        if: steps.check_cf_templates.outputs.cf_exists == 'true'
         run: |
           #!/usr/bin/env bash
 
@@ -228,7 +228,7 @@ jobs:
           done
 
       - name: Run cfn-guard script for cdk templates
-        if: steps.check_cdk.outputs.exists == 'true'
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
           #!/usr/bin/env bash
 
