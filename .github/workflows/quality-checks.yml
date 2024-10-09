@@ -58,9 +58,60 @@ jobs:
         id: check_poetry
         run: |
           if [ -f pyproject.toml ] && grep -q '\[tool.poetry\]' pyproject.toml; then
+            echo "****************"
+            echo "Project uses poetry"
+            echo "****************"
             echo "uses_poetry=true" >> $GITHUB_OUTPUT
           else
+            echo "****************"
+            echo "Project does not use poetry"
+            echo "****************"
             echo "uses_poetry=false" >> $GITHUB_OUTPUT
+          fi
+  
+      - name: Check for SAM templates
+        id: check_sam_templates
+        run: |
+          if [ -d "SAMtemplates" ]; then
+            echo "****************"
+            echo "Project has SAM templates
+            echo "****************"
+            echo "sam_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not have SAM templates
+            echo "****************"
+            echo "sam_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for cloudformation templates
+        id: check_cf_templates
+        run: |
+          if [ -d "cloudformation" ]; then
+            echo "****************"
+            echo "Project has cloudformation templates
+            echo "****************"
+            echo "cf_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not have cloudformation templates
+            echo "****************"
+            echo "cf_exists=false" >> $GITHUB_OUTPUT
+          fi
+  
+      - name: Check for cdk
+        id: check_cdk
+        run: |
+          if [ -d "packages/cdk" ]; then
+            echo "****************"
+            echo "Project has cdk
+            echo "****************"
+            echo "cdk_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not have cdk
+            echo "****************"
+            echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check licenses (Python)
@@ -98,33 +149,6 @@ jobs:
             .venv
             node_modules
             .git
-
-      - name: Check for SAM templates
-        id: check_sam_templates
-        run: |
-          if [ -d "SAMtemplates" ]; then
-            echo "sam_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "sam_exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check for cloudformation templates
-        id: check_cf_templates
-        run: |
-          if [ -d "cloudformation" ]; then
-            echo "cf_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "cf_exists=false" >> $GITHUB_OUTPUT
-          fi
-  
-      - name: Check for cdk
-        id: check_cdk
-        run: |
-          if [ -d "packages/cdk" ]; then
-            echo "cdk_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "cdk_exists=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Run cfn-lint
         if: steps.check_sam_templates.outputs.exists == 'true' || steps.check_cf_templates.outputs.exists == 'true'
