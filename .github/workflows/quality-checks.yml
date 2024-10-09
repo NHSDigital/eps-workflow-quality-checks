@@ -114,6 +114,10 @@ jobs:
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check licenses (Makefile)
+        run: |
+          make check-licenses
+
       - name: Check licenses (Python)
         if: steps.check_poetry.outputs.uses_poetry == 'true'
         run: |
