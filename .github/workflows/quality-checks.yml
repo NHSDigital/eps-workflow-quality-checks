@@ -92,16 +92,6 @@ jobs:
         with:
           node_version: ${{ inputs.node_version }}
 
-      - name: Upload SBOMs
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: SBOMS
-          path: '**/*sbom*.json'
-
-      - name: Run linting for TypeScript and Python
-        run: make lint
-
       - name: actionlint
         uses: raven-actions/actionlint@v2
 
@@ -251,3 +241,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  sbom_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0
+
+      - name: Setting up .npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          echo "@nhsdigital:registry=https://npm.pkg.github.com" >> ~/.npmrc
+
+      - name: make install
+        run: |
+          make install
+
+      - name: Generate and check SBOMs
+        uses: NHSDigital/eps-action-sbom@more_details
+        with:
+          node_version: ${{ inputs.node_version }}
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: SBOMS
+          path: '**/*sbom*.json'
+
