@@ -74,12 +74,12 @@ jobs:
         run: |
           if [ -d "SAMtemplates" ]; then
             echo "****************"
-            echo "Project has SAM templates
+            echo "Project has SAM templates"
             echo "****************"
             echo "sam_exists=true" >> $GITHUB_OUTPUT
           else
             echo "****************"
-            echo "Project does not have SAM templates
+            echo "Project does not have SAM templates"
             echo "****************"
             echo "sam_exists=false" >> $GITHUB_OUTPUT
           fi
@@ -89,12 +89,12 @@ jobs:
         run: |
           if [ -d "cloudformation" ]; then
             echo "****************"
-            echo "Project has cloudformation templates
+            echo "Project has cloudformation templates"
             echo "****************"
             echo "cf_exists=true" >> $GITHUB_OUTPUT
           else
             echo "****************"
-            echo "Project does not have cloudformation templates
+            echo "Project does not have cloudformation templates'
             echo "****************"
             echo "cf_exists=false" >> $GITHUB_OUTPUT
           fi
@@ -104,12 +104,12 @@ jobs:
         run: |
           if [ -d "packages/cdk" ]; then
             echo "****************"
-            echo "Project has cdk
+            echo "Project has cdk"
             echo "****************"
             echo "cdk_exists=true" >> $GITHUB_OUTPUT
           else
             echo "****************"
-            echo "Project does not have cdk
+            echo "Project does not have cdk"
             echo "****************"
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
