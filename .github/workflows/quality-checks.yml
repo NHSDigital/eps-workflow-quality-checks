@@ -94,9 +94,9 @@ jobs:
             echo "cf_exists=true" >> $GITHUB_OUTPUT
           else
             echo "****************"
-            echo "Project does not have cloudformation templates'
+            echo "Project does not have cloudformation templates"
             echo "****************"
-            echo "cf_exists=false" >> $GITHUB_OUTPUT
+            echo "cfexists=false" >> $GITHUB_OUTPUT
           fi
   
       - name: Check for cdk
