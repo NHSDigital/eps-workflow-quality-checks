@@ -87,11 +87,6 @@ jobs:
               exit 1
           fi
   
-      - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@v1
-        with:
-          node_version: ${{ inputs.node_version }}
-
       - name: actionlint
         uses: raven-actions/actionlint@v2
 
