@@ -14,10 +14,8 @@ A workflow to run the quality checks for EPS repositories. The steps executed by
 # Usage
 
 ## Inputs
-### `node_version`
 
-One of `[18, 20, 22]`. SBOM generations requires knowing which version of nodeJS is being used.
-
+None
 
 ## Required Makefile targets
 
@@ -50,9 +48,7 @@ on:
 
 jobs:
   quality_checks:
-    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@v1
-    with:
-      node_version: '20'
+    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@main
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
