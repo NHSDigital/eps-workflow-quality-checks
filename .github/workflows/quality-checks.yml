@@ -261,8 +261,6 @@ jobs:
 
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
-        with:
-          node_version: ${{ inputs.node_version }}
   
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
