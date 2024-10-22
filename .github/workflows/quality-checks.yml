@@ -256,7 +256,14 @@ jobs:
 
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
-  
+
+      - name: Ensure .gitallowed exists, for secret scanning
+        run: |
+          if [ ! -f ".gitallowed" ]; then
+            echo "Creating empty .gitallowed file"
+            touch .gitallowed
+          fi
+
       - name: Run Secret Scanning with Git Secrets
         run: |
           docker build -t nhsd-git-secrets-scan \
