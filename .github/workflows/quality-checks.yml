@@ -264,10 +264,11 @@ jobs:
             touch .gitallowed
           fi
 
+      # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
       - name: Run Secret Scanning with Git Secrets
         run: |
           docker build -t nhsd-git-secrets-scan \
-            https://raw.githubusercontent.com/NHSDigital/software-engineering-quality-framework/refs/heads/main/tools/nhsd-git-secrets/nhsd-git-secrets.dockerfile
+            https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets.dockerfile
           docker run --rm nhsd-git-secrets-scan
 
       - name: SonarCloud Scan
