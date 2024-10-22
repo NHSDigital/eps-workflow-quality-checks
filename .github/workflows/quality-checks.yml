@@ -16,6 +16,20 @@ jobs:
           ref: ${{ env.BRANCH_NAME }}
           fetch-depth: 0
 
+      # Must be done before anything installs, or it will check dependencies for secrets too.
+      - name: Ensure .gitallowed exists, for secret scanning
+        run: |
+          if [ ! -f ".gitallowed" ]; then
+            echo "Creating empty .gitallowed file"
+            touch .gitallowed
+          fi
+
+      # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
+      - name: Run Secret Scanning with Git Secrets
+        run: |
+          curl -o nhsd-git-secrets.dockerfile https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets.dockerfile
+          docker build -t nhsd-git-secrets-scan -f nhsd-git-secrets.dockerfile
+  
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
         uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
@@ -256,20 +270,6 @@ jobs:
 
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
-
-      - name: Ensure .gitallowed exists, for secret scanning
-        run: |
-          if [ ! -f ".gitallowed" ]; then
-            echo "Creating empty .gitallowed file"
-            touch .gitallowed
-          fi
-
-      # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
-      - name: Run Secret Scanning with Git Secrets
-        run: |
-          docker build -t nhsd-git-secrets-scan \
-            https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets.dockerfile
-          docker run --rm nhsd-git-secrets-scan
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
