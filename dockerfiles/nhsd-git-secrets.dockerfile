@@ -48,7 +48,7 @@ RUN curl https://codeload.github.com/NHSDigital/software-engineering-quality-fra
 
 RUN echo "Copying allowed secrets list"
 COPY ./.gitallowed .
-RUN echo .gitallowed
+RUN cat .gitallowed
 
 # Register additional providers: adds AWS by default
 RUN echo "Configuring secrets scanner"
