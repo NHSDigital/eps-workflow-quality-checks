@@ -257,6 +257,12 @@ jobs:
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
   
+      - name: Run Secret Scanning with Git Secrets
+        run: |
+          docker build -t nhsd-git-secrets-scan \
+            https://raw.githubusercontent.com/NHSDigital/software-engineering-quality-framework/refs/heads/main/tools/nhsd-git-secrets/nhsd-git-secrets.dockerfile
+          docker run --rm nhsd-git-secrets-scan
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
