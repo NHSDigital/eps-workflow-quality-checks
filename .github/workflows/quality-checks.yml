@@ -22,6 +22,7 @@ jobs:
           if [ ! -f ".gitallowed" ]; then
             echo "Creating empty .gitallowed file"
             touch .gitallowed
+            echo "./nhsd-rules-deny.txt:10" >> .gitallowed
           fi
 
       # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
