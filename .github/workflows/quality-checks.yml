@@ -28,7 +28,7 @@ jobs:
       # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
       - name: Run Secret Scanning with Git Secrets
         run: |
-          curl -o nhsd-git-secrets.dockerfile https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/ref/${{ github.ref_name }}/dockerfiles/nhsd-git-secrets.dockerfile
+          curl -o nhsd-git-secrets.dockerfile https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/ref/${{ github.action_ref }}/dockerfiles/nhsd-git-secrets.dockerfile
           docker build -t nhsd-git-secrets-scan -f nhsd-git-secrets.dockerfile .
   
       # using git commit sha for version of action to ensure we have stable version
