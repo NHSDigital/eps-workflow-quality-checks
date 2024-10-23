@@ -5,11 +5,23 @@ on:
     secrets:
       SONAR_TOKEN:
         required: true
+    inputs:
+      install_java:
+        type: boolean
+        description: "If true, the action will install java into the runner, separately from ASDF."
+        default: false
+        required: false
 
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/setup-java@v4
+        if: ${{ inputs.install_java }}
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
