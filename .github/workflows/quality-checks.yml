@@ -4,7 +4,7 @@ on:
   workflow_call:
     secrets:
       SONAR_TOKEN:
-        required: true
+        required: false
     inputs:
       install_java:
         type: boolean
@@ -284,8 +284,20 @@ jobs:
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
 
+      - name: "check is SONAR_TOKEN exists"
+        env: 
+            super_secret: ${{ secrets.SONAR_TOKEN }}
+        if: ${{ env.super_secret != '' }}
+        run: |
+          echo "echo the secret \"SONAR_TOKEN\" has not been made
+          echo please go to \"settings \> secrets \> actions\" to create it
+          echo Without this, the sonar scan will not run.
+          echo "RUN_SONAR=true" >> "$GITHUB_ENV"
+
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
+        if: ${{ env.RUN_SONAR == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
