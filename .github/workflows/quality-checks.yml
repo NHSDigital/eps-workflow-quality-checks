@@ -288,11 +288,7 @@ jobs:
         env: 
             super_secret: ${{ secrets.SONAR_TOKEN }}
         if: ${{ env.super_secret != '' }}
-        run: |
-          echo The secret \"SONAR_TOKEN\" has not been set
-          echo please go to \"settings \> secrets \> actions\" to create it
-          echo Without this, the sonar scan will not run.
-          echo "RUN_SONAR=true" >> "$GITHUB_ENV"
+        run: echo "RUN_SONAR=true" >> "$GITHUB_ENV"
 
       
       - name: SonarCloud Scan
