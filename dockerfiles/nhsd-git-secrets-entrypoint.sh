@@ -21,6 +21,9 @@ if [ ! -d .git ]; then
   git init
 fi
 
+# Git can get stroppy with repositories it thinks have dubuous ownership. Ignore that.
+git config --global --add safe.directory /src
+
 # Run the secrets scan with user-provided arguments (default is scanning all files)
 echo "Running secrets scan..."
 /secrets-scanner/git-secrets "$@"
