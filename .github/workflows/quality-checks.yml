@@ -56,7 +56,7 @@ jobs:
 
       - name: Run secrets scan
         run: |
-          git-secrets --scan-history -r .
+          git-secrets --scan-history .
 
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
