@@ -37,12 +37,27 @@ jobs:
             fi
           echo "./nhsd-rules-deny.txt:10" >> .gitallowed
 
-      # https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.1/dockerfiles/nhsd-git-secrets.dockerfile
-      - name: Run Secret Scanning with Git Secrets
+      - name: Install git-secrets
         run: |
-          curl -o nhsd-git-secrets.dockerfile https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets.dockerfile
-          docker build -t nhsd-git-secrets-scan -f nhsd-git-secrets.dockerfile .
-  
+          sudo apt-get update
+          sudo apt-get install -y git curl
+          git clone https://github.com/awslabs/git-secrets.git
+          cd git-secrets
+          sudo make install
+
+      - name: Download regex patterns
+        run: |
+          curl -L https://raw.githubusercontent.com/NHSDigital/software-engineering-quality-framework/main/tools/nhsd-git-secrets/nhsd-rules-deny.txt -o nhsd-rules-deny.txt
+
+      - name: Configure git-secrets
+        run: |
+          git-secrets --register-aws
+          git-secrets --add-provider -- cat nhsd-rules-deny.txt
+
+      - name: Run secrets scan
+        run: |
+          git-secrets --scan-history -r .
+
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
         uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
