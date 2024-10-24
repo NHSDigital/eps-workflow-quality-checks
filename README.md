@@ -12,6 +12,13 @@ A workflow to run the quality checks for EPS repositories. The steps executed by
 - **Check Licenses**: Runs `make check-licenses`.
 - **Check Python Licenses** (*Conditional*): If the project uses Poetry, scans Python dependencies for incompatible licenses.
 
+The secret scanning also has a dockerfile, which can be run against a repo in order to scan it manually (or as part of pre-commit hooks). This can be done like so:
+```bash
+docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/main/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets .
+docker run -v /path/to/repo:/src git-secrets --scan-history .
+```
+For usage of the script, see the [source repo](https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets). Generally, you will either need `--scan -r .` or `--scan-history .`.
+
 # Usage
 
 ## Inputs
