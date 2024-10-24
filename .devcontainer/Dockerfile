@@ -9,8 +9,12 @@ RUN apt-get update \
     jq apt-transport-https ca-certificates gnupg-agent \
     software-properties-common bash-completion python3-pip make libbz2-dev \
     libreadline-dev libsqlite3-dev wget llvm libncurses5-dev libncursesw5-dev \
-    xz-utils tk-dev liblzma-dev netcat libyaml-dev
+    xz-utils tk-dev liblzma-dev netcat libyaml-dev pre-commit
 
 USER vscode
+
+WORKDIR /workspaces/git-secrets
+RUN curl https://codeload.github.com/awslabs/git-secrets/tar.gz/master | tar -xz --strip=1 git-secrets-master
+RUN curl https://codeload.github.com/NHSDigital/software-engineering-quality-framework/tar.gz/main | tar -xz --strip=3 software-engineering-quality-framework-main/tools/nhsd-git-secrets/nhsd-rules-deny.txt
 
 WORKDIR /workspaces/eps-workflow-quality-checks
