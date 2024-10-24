@@ -36,6 +36,8 @@ jobs:
             touch .gitallowed
             fi
           echo "./nhsd-rules-deny.txt:10" >> .gitallowed
+          echo "Allowing the following regex patterns:"
+          cat .gitallowed
 
       - name: Install git-secrets
         run: |
