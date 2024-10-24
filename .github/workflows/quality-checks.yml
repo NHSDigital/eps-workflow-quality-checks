@@ -43,8 +43,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git curl
-          git clone https://github.com/awslabs/git-secrets.git /git-secrets
-          cd /git-secrets
+          git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets
+          cd /tmp/git-secrets
           sudo make install
 
       - name: Download regex patterns
