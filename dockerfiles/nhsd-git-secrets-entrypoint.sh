@@ -6,6 +6,8 @@ if [ ! -d /src ]; then
   exit 1
 fi
 
+make install
+
 # Change to the mounted source directory, or fail
 cd /src || exit 1
 
@@ -27,3 +29,11 @@ git config --global --add safe.directory /src
 # Run the secrets scan with user-provided arguments (default is scanning all files)
 echo "Running secrets scan..."
 /secrets-scanner/git-secrets "$@"
+
+# Check the exit code of the scan to confirm success or failure
+if [ $? -eq 0 ]; then
+  echo "Secrets scan completed successfully."
+else
+  echo "Secrets scan failed. Review the logs for details."
+  exit 1
+fi
