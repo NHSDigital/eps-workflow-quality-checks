@@ -20,7 +20,7 @@
 FROM ubuntu:latest
 
 RUN echo "Installing required modules"
-RUN apt-get update && apt-get -y install curl git build-essential make
+RUN apt-get update && apt-get -y install curl git build-essential
 
 WORKDIR /secrets-scanner
 
