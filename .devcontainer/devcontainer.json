@@ -14,6 +14,7 @@
       "source=${env:HOME}${env:USERPROFILE}/.gnupg,target=/home/vscode/.gnupg,type=bind",
       "source=${env:HOME}${env:USERPROFILE}/.npmrc,target=/home/vscode/.npmrc,type=bind"
     ],
+    "postAttachCommand": "/workspaces/git-secrets/git-secrets --add-provider /workspaces/git-secrets/nhsd-rules-deny.txt && pre-commit install --install-hooks --overwrite",
     "containerUser": "vscode",
     "features": {},
     "customizations": {
