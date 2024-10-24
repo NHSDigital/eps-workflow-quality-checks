@@ -40,10 +40,9 @@ RUN /secrets-scanner/git-secrets --register-aws
 RUN /secrets-scanner/git-secrets --add-provider -- cat nhsd-rules-deny.txt
 
 # Copy the entrypoint script
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN curl -o /usr/local/bin/entrypoint.sh https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets-entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Set the entrypoint
-RUN curl -o /usr/local/bin/entrypoint.sh https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/aea-4540-secret-scanning/dockerfiles/nhsd-git-secrets-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
