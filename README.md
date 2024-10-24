@@ -5,6 +5,7 @@ A workflow to run the quality checks for EPS repositories. The steps executed by
 - **Generate and Check SBOMs**: Creates Software Bill of Materials (SBOMs) to track dependencies for security and compliance. Uses [THIS](https://github.com/NHSDigital/eps-action-sbom) action.
 - **Run Linting**
 - **Run Unit Tests**
+- **Scan git history for secrets**: Scans for secret-like patterns, using https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets
 - **SonarCloud Scan**: Performs code analysis using SonarCloud to detect quality issues and vulnerabilities.
 - **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
 - **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
