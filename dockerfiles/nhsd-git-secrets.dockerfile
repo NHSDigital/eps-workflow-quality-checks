@@ -1,3 +1,12 @@
+# This dockerfile allows you to run the NHS flavour of secret-scanning on the mounted directory.
+# It assumes nothing about the local filesystem, so can be built remotely by using 
+#    docker build -t git-secrets -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/<VERSION>/dockerfiles/nhsd-git-secrets.dockerfile .
+# When run:
+#    docker run git-secrets
+# It will default to scanning the local directory (note that it must be a git repository)
+# However, script arguments (https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets)
+# can also be supplied. Remember to provide the trailing `.`, or the script would assume 
+# you want to scan STDIN.
 
 FROM ubuntu:latest
 
