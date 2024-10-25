@@ -17,15 +17,13 @@ The secret scanning also has a dockerfile, which can be run against a repo in or
 docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/main/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets .
 docker run -v /path/to/repo:/src git-secrets --scan-history .
 ```
-For usage of the script, see the [source repo](https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets). Generally, you will either need `--scan -r .` or `--scan-history .`.
+For usage of the script, see the [source repo](https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets). Generally, you will either need `--scan -r .` or `--scan-history .`. The arguments default to `--scan -r .`, i.e. scanning the current state of the code.
 
 In order to enable the pre-commit hook for secret scanning (to prevent developers from committing secrets in the first place), add the following to the `.devcontainer/devcontainer.json` file:
 ```json
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
     "remoteEnv": { "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}" },
-    "postAttachCommand": "docker build -f /workspaces/eps-workflow-quality-checks/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets . && pre-commit install --install-hooks -f",
+    "postAttachCommand": "docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/blob/v3.1.0/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets . && pre-commit install --install-hooks -f",
     "features": {
       "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
         "version": "latest",
