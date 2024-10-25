@@ -19,6 +19,37 @@ docker run -v /path/to/repo:/src git-secrets --scan-history .
 ```
 For usage of the script, see the [source repo](https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets). Generally, you will either need `--scan -r .` or `--scan-history .`.
 
+In order to enable the pre-commit hook for secret scanning (to prevent developers from committing secrets in the first place), add the following to the `.devcontainer/devcontainer.json` file:
+```json
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+    "remoteEnv": { "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}" },
+    "postAttachCommand": "docker build -f /workspaces/eps-workflow-quality-checks/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets . && pre-commit install --install-hooks -f",
+    "features": {
+      "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+        "version": "latest",
+        "moby": "true",
+        "installDockerBuildx": "true"
+      }
+    }
+}
+```
+And the this pre-commit hook to the `.pre-commit-config.yaml` file:
+```yaml
+repos:
+- repo: local
+  hooks:
+    - id: git-secrets
+      name: Git Secrets
+      description: git-secrets scans commits, commit messages, and --no-ff merges to prevent adding secrets into your git repositories.
+      entry: bash
+      args:
+        - -c
+        - 'docker run -v "$LOCAL_WORKSPACE_FOLDER:/src" git-secrets --pre_commit_hook'
+      language: system
+```
+
 # Usage
 
 ## Inputs
