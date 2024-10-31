@@ -1,0 +1,9 @@
+*.log
+**/node_modules/
+.envrc
+.idea
+.vscode/settings.json
+.DS_Store
+release_notes
+.venv
+.asdf
