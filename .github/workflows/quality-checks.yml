@@ -4,17 +4,61 @@ on:
   workflow_call:
     secrets:
       SONAR_TOKEN:
-        required: true
+        required: false
+    inputs:
+      install_java:
+        type: boolean
+        description: "If true, the action will install java into the runner, separately from ASDF."
+        default: false
+        required: false
 
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/setup-java@v4
+        if: ${{ inputs.install_java }}
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BRANCH_NAME }}
           fetch-depth: 0
+
+      # Must be done before anything installs, or it will check dependencies for secrets too.
+      - name: Ensure .gitallowed exists, for secret scanning
+        run: |
+          if [ ! -f ".gitallowed" ]; then
+            echo "Creating empty .gitallowed file"
+            touch .gitallowed
+            fi
+          echo "./nhsd-rules-deny.txt:10" >> .gitallowed
+          echo "Allowing the following regex patterns:"
+          cat .gitallowed
+
+      - name: Install git-secrets
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl
+          git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets
+          cd /tmp/git-secrets
+          sudo make install
+
+      - name: Download regex patterns
+        run: |
+          curl -L https://raw.githubusercontent.com/NHSDigital/software-engineering-quality-framework/main/tools/nhsd-git-secrets/nhsd-rules-deny.txt -o nhsd-rules-deny.txt
+
+      - name: Configure git-secrets
+        run: |
+          git-secrets --register-aws
+          git-secrets --add-provider -- cat nhsd-rules-deny.txt
+
+      - name: Run secrets scan
+        run: |
+          git-secrets --scan-history .
 
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
@@ -258,9 +302,17 @@ jobs:
 
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
-  
+
+      - name: "check is SONAR_TOKEN exists"
+        env: 
+            super_secret: ${{ secrets.SONAR_TOKEN }}
+        if: ${{ env.super_secret != '' }}
+        run: echo "RUN_SONAR=true" >> "$GITHUB_ENV"
+
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
+        if: ${{ env.RUN_SONAR == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
