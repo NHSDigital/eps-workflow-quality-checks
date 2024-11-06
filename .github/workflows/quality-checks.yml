@@ -11,6 +11,11 @@ on:
         description: "If true, the action will install java into the runner, separately from ASDF."
         default: false
         required: false
+      run_sonar:
+        type: boolean
+        description: Toggle to run sonar code analyis on this repository.
+        default: true
+        required: false
 
 jobs:
   quality_checks:
@@ -107,7 +112,22 @@ jobs:
             echo "****************"
             echo "uses_poetry=false" >> $GITHUB_OUTPUT
           fi
-  
+
+      - name: Check if project uses Java
+        id: check_java
+        run: |
+          if [ -f pom.xml ]; then
+            echo "****************"
+            echo "Detected a Java project"
+            echo "****************"
+            echo "uses_java=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not use Java"
+            echo "****************"
+            echo "uses_java=false" >> $GITHUB_OUTPUT
+          fi
+    
       - name: Check for SAM templates
         id: check_sam_templates
         run: |
@@ -306,13 +326,16 @@ jobs:
       - name: "check is SONAR_TOKEN exists"
         env: 
             super_secret: ${{ secrets.SONAR_TOKEN }}
-        if: ${{ env.super_secret != '' }}
-        run: echo "RUN_SONAR=true" >> "$GITHUB_ENV"
+        if: ${{ env.super_secret != '' && inputs.run_sonar == 'true' }}
+        run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
 
-      
+      - name: Run SonarQube analysis
+        if: ${{ steps.check_java.outputs.uses_java == 'true' && env.SONAR_TOKEN_EXISTS == 'true' }}
+        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
-        if: ${{ env.RUN_SONAR == 'true' }}
+        if: ${{ steps.check_java.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
