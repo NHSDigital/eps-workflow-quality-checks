@@ -326,7 +326,7 @@ jobs:
       - name: "check is SONAR_TOKEN exists"
         env: 
             super_secret: ${{ secrets.SONAR_TOKEN }}
-        if: ${{ env.super_secret != '' && inputs.run_sonar == 'true' }}
+        if: ${{ env.super_secret != '' && inputs.run_sonar == true }}
         run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
 
       - name: Run SonarQube analysis
