@@ -1,5 +1,7 @@
 # eps-workflow-quality-checks
-A workflow to run the quality checks for EPS repositories. The steps executed by this script are as follows:
+
+
+A workflow to run the quality checks for EPS repositories. The main element of this lives in the [`quality-checks.yml`](./.github/workflows/quality-checks.yml) configuration file. The steps executed by this workflow are as follows:
 
 - **Install Project Dependencies**
 - **Generate and Check SBOMs**: Creates Software Bill of Materials (SBOMs) to track dependencies for security and compliance. Uses [THIS](https://github.com/NHSDigital/eps-action-sbom) action.
@@ -23,7 +25,7 @@ In order to enable the pre-commit hook for secret scanning (to prevent developer
 ```json
 {
     "remoteEnv": { "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}" },
-    "postAttachCommand": "docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.0/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets . && pre-commit install --install-hooks -f",
+    "postAttachCommand": "docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v4.0.2/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets . && pre-commit install --install-hooks -f",
     "features": {
       "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
         "version": "latest",
@@ -33,6 +35,7 @@ In order to enable the pre-commit hook for secret scanning (to prevent developer
     }
 }
 ```
+
 And the this pre-commit hook to the `.pre-commit-config.yaml` file:
 ```yaml
 repos:
@@ -85,7 +88,7 @@ on:
 
 jobs:
   quality_checks:
-    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@main
+    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@4.0.2
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
