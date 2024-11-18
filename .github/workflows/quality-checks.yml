@@ -203,6 +203,9 @@ jobs:
               exit 1
           fi
   
+      - name: Run code lint
+        run: make lint
+
       - name: actionlint
         uses: raven-actions/actionlint@v2
 
