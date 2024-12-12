@@ -337,7 +337,7 @@ jobs:
         run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@master
         if: ${{ steps.check_java.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
