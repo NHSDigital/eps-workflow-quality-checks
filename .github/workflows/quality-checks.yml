@@ -24,8 +24,8 @@ jobs:
       - uses: actions/setup-java@v4
         if: ${{ inputs.install_java }}
         with:
-          java-version: '21'
-          distribution: 'corretto'
+          java-version: "21"
+          distribution: "corretto"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -127,7 +127,7 @@ jobs:
             echo "****************"
             echo "uses_java=false" >> $GITHUB_OUTPUT
           fi
-    
+
       - name: Check for SAM templates
         id: check_sam_templates
         run: |
@@ -157,7 +157,7 @@ jobs:
             echo "****************"
             echo "cf_exists=false" >> $GITHUB_OUTPUT
           fi
-  
+
       - name: Check for cdk
         id: check_cdk
         run: |
@@ -171,6 +171,21 @@ jobs:
             echo "Project does not have cdk"
             echo "****************"
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for Terraform
+        id: check_terraform
+        run: |
+          if [ -f "**/*.tf" ]; then
+            echo "****************"
+            echo "Project has Terraform files"
+            echo "****************"
+            echo "terraform_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not have Terraform files"
+            echo "****************"
+            echo "terraform_exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check licenses (Makefile)
@@ -202,7 +217,7 @@ jobs:
               echo "$INCOMPATIBLE_LIBS"
               exit 1
           fi
-  
+
       - name: Run code lint
         run: make lint
 
@@ -227,12 +242,12 @@ jobs:
 
       - name: Run unit tests
         run: make test
-  
+
       - name: Run cdk-synth
         if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
           make cdk-synth
-  
+
       - name: Install AWS SAM CLI
         if: steps.check_sam_templates.outputs.sam_exists == 'true'
         run: |
@@ -323,12 +338,17 @@ jobs:
           name: cfn_guard_output
           path: cfn_guard_output
 
+      - name: Run Terraform quality checks
+        if: steps.check_terraform.outputs.terraform_exists == 'true'
+        run: |
+          make tf-quality-checks
+
       - name: Generate and check SBOMs
         uses: NHSDigital/eps-action-sbom@main
 
       - name: "check is SONAR_TOKEN exists"
-        env: 
-            super_secret: ${{ secrets.SONAR_TOKEN }}
+        env:
+          super_secret: ${{ secrets.SONAR_TOKEN }}
         if: ${{ env.super_secret != '' && inputs.run_sonar == true }}
         run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
 
