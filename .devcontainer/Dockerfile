@@ -18,10 +18,11 @@ RUN git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.11.3; \
     echo '. $HOME/.asdf/asdf.sh' >> ~/.bashrc; \
     echo '. $HOME/.asdf/completions/asdf.bash' >> ~/.bashrc;
 
-ENV PATH="$PATH:/home/vscode/.asdf/bin/:/workspaces/eps-prescription-tracker-ui/node_modules/.bin"
+ENV PATH="$PATH:/home/vscode/.asdf/bin/:/workspaces/eps-workflow-quality-checks/node_modules/.bin"
 
 # Install ASDF plugins#
-RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git; \
+    asdf plugin add  terraform https://github.com/asdf-community/asdf-hashicorp.git;
 
 WORKDIR /workspaces/eps-workflow-quality-checks
 
@@ -29,4 +30,5 @@ ADD .tool-versions /workspaces/eps-workflow-quality-checks/.tool-versions
 ADD .tool-versions /home/vscode/.tool-versions
 
 RUN asdf install; \
-    asdf reshim nodejs;
+    asdf reshim nodejs; \
+    asdf reshim terraform;
