@@ -1,4 +1,4 @@
-name: Quality Checks
+name: Quality Checks (Parallelised)
 
 on:
   workflow_call:
@@ -18,8 +18,14 @@ on:
         required: false
 
 jobs:
-  quality_checks:
+  setup:
     runs-on: ubuntu-22.04
+    outputs:
+      uses_poetry: ${{ steps.check_poetry.outputs.uses_poetry }}
+      uses_java: ${{ steps.check_java.outputs.uses_java }}
+      sam_exists: ${{ steps.check_sam_templates.outputs.sam_exists }}
+      cf_exists: ${{ steps.check_cf_templates.outputs.cf_exists }}
+      cdk_exists: ${{ steps.check_cdk.outputs.cdk_exists }}
     steps:
       - uses: actions/setup-java@v4
         if: ${{ inputs.install_java }}
@@ -173,42 +179,26 @@ jobs:
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check licenses (Makefile)
-        run: |
-          make check-licenses
-
-      - name: Check licenses (Python)
-        if: steps.check_poetry.outputs.uses_poetry == 'true'
-        run: |
-          #!/bin/bash
-          set -euo pipefail
-
-          # Install pip-licenses if not already installed
-          if ! poetry run pip show pip-licenses > /dev/null 2>&1; then
-            echo "pip-licenses is not detected. Installing..."
-            poetry run pip install pip-licenses
-          fi
-
-          # known packages with dual licensing
-          IGNORE_PACKAGES="PyGithub chardet text-unidecode"
-          LICENSES=$(poetry run pip-licenses  --ignore-packages ${IGNORE_PACKAGES})
-          INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
-
-          if [[ -z $INCOMPATIBLE_LIBS ]]; then
-              echo "Checked licenses are OK"
-              exit 0
-          else
-              echo "The following libraries were found which are not compatible with this project's license:"
-              echo "$INCOMPATIBLE_LIBS"
-              exit 1
-          fi
-  
+  lint:
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+      - uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
+      - name: make install
+        run: make install
       - name: Run code lint
         run: make lint
 
-      - name: actionlint
-        uses: raven-actions/actionlint@v2
-
+  shellcheck:
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
         with:
@@ -218,23 +208,81 @@ jobs:
             node_modules
             .git
 
+  cfn-lint:
+    needs: setup
+    if: needs.setup.outputs.sam_exists == 'true' || needs.setup.outputs.cf_exists == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
       - name: Run cfn-lint
-        if: steps.check_sam_templates.outputs.sam_exists == 'true' || steps.check_cf_templates.outputs.cf_exists == 'true'
         run: |
           pip install cfn-lint
           cfn-lint -I "cloudformation/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
           cfn-lint -I "SAMtemplates/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
 
+  unit-tests:
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+      - uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
+      - name: make install
+        run: make install
       - name: Run unit tests
         run: make test
-  
+
+  license-checks:
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+      - uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
+      - name: make install
+        run: make install
+      - name: Check licenses (Makefile)
+        run: make check-licenses
+      - name: Check licenses (Python)
+        if: needs.setup.outputs.uses_poetry == 'true'
+        run: |
+          #!/bin/bash
+          set -euo pipefail
+          if ! poetry run pip show pip-licenses > /dev/null 2>&1; then
+            poetry run pip install pip-licenses
+          fi
+          IGNORE_PACKAGES="PyGithub chardet text-unidecode"
+          LICENSES=$(poetry run pip-licenses  --ignore-packages ${IGNORE_PACKAGES})
+          INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
+          if [[ -z $INCOMPATIBLE_LIBS ]]; then
+              echo "Checked licenses are OK"
+              exit 0
+          else
+              echo "The following libraries were found which are not compatible with this project's license:"
+              echo "$INCOMPATIBLE_LIBS"
+              exit 1
+          fi
+
+  remaining-checks:
+    needs: [setup, lint, shellcheck, cfn-lint, unit-tests, license-checks]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+
       - name: Run cdk-synth
-        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        if: needs.setup.outputs.cdk_exists == 'true'
         run: |
           make cdk-synth
   
       - name: Install AWS SAM CLI
-        if: steps.check_sam_templates.outputs.sam_exists == 'true'
+        if: needs.setup.outputs.sam_exists == 'true'
         run: |
           pip install aws-sam-cli
 
@@ -254,7 +302,7 @@ jobs:
           mkdir -p cfn_guard_output
 
       - name: Run cfn-guard script for sam templates
-        if: steps.check_sam_templates.outputs.sam_exists == 'true'
+        if: needs.setup.outputs.sam_exists == 'true'
         run: |
           #!/usr/bin/env bash
           set -eou pipefail
@@ -279,7 +327,7 @@ jobs:
           done
 
       - name: Run cfn-guard script for cloudformation templates
-        if: steps.check_cf_templates.outputs.cf_exists == 'true'
+        if: needs.setup.outputs.cf_exists == 'true'
         run: |
           #!/usr/bin/env bash
 
@@ -296,7 +344,7 @@ jobs:
           done
 
       - name: Run cfn-guard script for cdk templates
-        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        if: needs.setup.outputs.cf_exists == 'true'
         run: |
           #!/usr/bin/env bash
 
@@ -333,12 +381,12 @@ jobs:
         run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
 
       - name: Run SonarQube analysis
-        if: ${{ steps.check_java.outputs.uses_java == 'true' && env.SONAR_TOKEN_EXISTS == 'true' }}
+        if: ${{ needs.setup.outputs.uses_java == 'true' && env.SONAR_TOKEN_EXISTS == 'true' }}
         run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@master
-        if: ${{ steps.check_java.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
+        if: ${{ needs.setup.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
