@@ -66,6 +66,7 @@ In order to run, these `make` commands must be present. They may be mocked, if t
 - `test`
 - `check-licenses`
 - `cdk-synth` - only needed if packages/cdk folder exists
+- `tf-quality-checks` - only needed if the project uses Terraform
 
 ## Environment variables
 
