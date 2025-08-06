@@ -87,6 +87,14 @@ jobs:
         env:
           PYTHON_CONFIGURE_OPTS: --enable-shared
 
+      - name: Debug
+        run: |
+          #!/bin/bash
+          set -euo pipefail
+          python --version
+          poetry run python --version
+          poetry run pip --version
+
       - name: Setting up .npmrc
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
