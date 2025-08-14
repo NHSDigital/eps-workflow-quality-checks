@@ -16,6 +16,10 @@ on:
         description: Toggle to run sonar code analyis on this repository.
         default: true
         required: false
+      reinstall_poetry:
+        type: boolean
+        description: Toggle to reinstall poetry on top of python version installed by asdf.
+        default: false
 
 jobs:
   quality_checks:
@@ -86,6 +90,14 @@ jobs:
           asdf_branch: v0.14.1
         env:
           PYTHON_CONFIGURE_OPTS: --enable-shared
+
+      - name: Reinstall poetry
+        if: ${{ inputs.reinstall_poetry }}
+        run: |
+          poetry_tool_version=$(cat .tool-versions | grep poetry)
+          poetry_version=${poetry_tool_version//"poetry "}
+          asdf uninstall poetry $poetry_version
+          asdf install poetry
 
       - name: Setting up .npmrc
         env:
