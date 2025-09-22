@@ -25,7 +25,7 @@ jobs:
   quality_checks:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: ${{ inputs.install_java }}
         with:
           java-version: '21'
