@@ -185,6 +185,21 @@ jobs:
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check for terraform
+        id: check_terraform
+        run: |
+          if [ -d "terraform" ]; then
+            echo "****************"
+            echo "Project has terraform"
+            echo "****************"
+            echo "terraform_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "****************"
+            echo "Project does not have terraform"
+            echo "****************"
+            echo "terraform_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check licenses (Makefile)
         run: |
           make check-licenses
@@ -298,7 +313,7 @@ jobs:
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
-            echo "Checking all templates in cloudformation folder with ruleest $ruleset"
+            echo "Checking all templates in cloudformation folder with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
                 --data cloudformation \
@@ -315,13 +330,40 @@ jobs:
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
-            echo "Checking all templates in cdk.out folder with ruleest $ruleset"
+            echo "Checking all templates in cdk.out folder with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
                 --data cdk.out \
                     --rules "/tmp/ruleset/output/$ruleset.guard" \
                 --show-summary fail \
                 > "cfn_guard_output/cdk.out_$ruleset.txt"
+          done
+
+      - name: Download terraform plans
+        if: steps.check_terraform.outputs.terraform_exists == 'true'
+        uses: actions/download-artifact@v5
+        with:
+          name: terraform_plans.zip
+      
+      - name: Run cfn-guard script for terraform plans
+        if: steps.check_cdk.outputs.terraform_exists == 'true'
+        run: |
+          #!/usr/bin/env bash
+
+          rm -rf /tmp/terraform_plans
+          mkdir /tmp/terraform_plans
+          unzip terraform_plans.zip -d /tmp/terraform_plans
+
+          declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
+          for ruleset in "${rulesets[@]}"
+          do
+            echo "Checking all terraform plans in downloaded artifact with ruleset $ruleset"
+
+            ~/.guard/bin/cfn-guard validate \
+                --data /tmp/terraform_plans \
+                    --rules "/tmp/ruleset/output/$ruleset.guard" \
+                --show-summary fail \
+                > "cfn_guard_output/terraform_plans_$ruleset.txt"
           done
 
       - name: Show cfn-guard output
