@@ -37,6 +37,11 @@ on:
         type: boolean
         description: "If true, the action will also tag the dev container image as 'latest' in ECR."
         required: true
+      check_ecr_image_scan_results_script_tag:
+        type: string
+        description: "The tag to download check_ecr_image_scan_results.sh script."
+        required: false
+        default: "dev_container_build"
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
@@ -354,15 +359,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout .github folder from workflow repo
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ github.action_repository }}
-          ref: ${{ github.action_ref }}
-          path: .workflow-github
-          sparse-checkout: |
-            .github/scripts/check_ecr_image_scan_results.sh
-
+      - name: Download check_ecr_image_scan_results.sh script
+        run: |
+          curl -L https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${{inputs.check_ecr_image_scan_results_script_tag}}/.github/scripts/check_ecr_image_scan_results.sh -o check_ecr_image_scan_results.sh
+          chmod +x check_ecr_image_scan_results.sh
       - name: Build dev container
         run: |
           docker build -f .devcontainer/Dockerfile -t dev-container-image .
@@ -395,10 +395,7 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-amd64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .workflow-github/
         run: |
-          ls -la .
-          # Wait a moment for ECR to process the new manifest
           sleep 30
           ./.github/scripts/check_ecr_image_scan_results.sh
 
@@ -412,14 +409,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout .github folder from workflow repo
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ github.action_repository }}
-          ref: ${{ github.action_ref }}
-          path: .workflow-github
-          sparse-checkout: |
-            .github/scripts/check_ecr_image_scan_results.sh
+      - name: Download check_ecr_image_scan_results.sh script
+        run: |
+          curl -L https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${{inputs.check_ecr_image_scan_results_script_tag}}/.github/scripts/check_ecr_image_scan_results.sh -o check_ecr_image_scan_results.sh
+          chmod +x check_ecr_image_scan_results.sh
 
       - name: Build dev container
         run: |
@@ -453,13 +446,10 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-arm64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .workflow-github/
         run: |
-          # List files recursively first
-          ls -la .
           # Wait a moment for ECR to process the new manifest
           sleep 30
-          ./.github/scripts/check_ecr_image_scan_results.sh
+          ./check_ecr_image_scan_results.sh
 
   create_multi_arch_manifest:
     permissions:
