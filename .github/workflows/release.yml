@@ -8,6 +8,24 @@ env:
   BRANCH_NAME: ${{ github.event.ref.BRANCH_NAME }}
 
 jobs:
+  get_commit_id:
+    runs-on: ubuntu-22.04
+    outputs:
+      commit_id: ${{ steps.commit_id.outputs.commit_id }}
+      sha_short: ${{ steps.commit_id.outputs.sha_short }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+
+      - name: Get Commit ID
+        id: commit_id
+        run: |
+          #  echo "commit_id=${{ github.sha }}" >> "$GITHUB_ENV"
+          echo "commit_id=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
   get_asdf_version:
     runs-on: ubuntu-22.04
     outputs:
@@ -26,10 +44,13 @@ jobs:
           TAG_FORMAT=$(yq '.TAG_FORMAT' .github/config/settings.yml)
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
   quality_checks:
-    needs: [get_asdf_version]
+    needs: [get_asdf_version, get_commit_id]
     uses: ./.github/workflows/quality-checks.yml
     with:
       asdfVersion: ${{ needs.get_asdf_version.outputs.asdf_version }}
+      tag_latest: true
+      dev_container_ecr: dev-container-quality-checks
+      dev_container_image_tag: release-${{ needs.get_commit_id.outputs.sha_short }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}

@@ -28,11 +28,15 @@ on:
       dev_container_ecr:
         type: string
         description: "The name of the ECR repository to push the dev container image to."
-        required: false
+        required: true
       dev_container_image_tag:
         type: string
         description: "The tag to use for the dev container image."
-        required: false
+        required: true
+      tag_latest:
+        type: boolean
+        description: "If true, the action will also tag the dev container image as 'latest' in ECR."
+        required: true
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
@@ -370,7 +374,6 @@ jobs:
     permissions:
       id-token: write
     runs-on: ubuntu-22.04
-    if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -419,7 +422,6 @@ jobs:
     permissions:
       id-token: write
     runs-on: ubuntu-22.04-arm
-    if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -498,13 +500,16 @@ jobs:
         run: |
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com
 
-      - name: Create and push multi-architecture manifest
+      - name: Create and push multi-architecture manifest for tag
         run: |
           # Create manifest list combining both architectures
           docker buildx imagetools create -t ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }} \
             ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64 \
             ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64
 
+      - name: Create and push multi-architecture manifest for latest tag
+        if: ${{ inputs.tag_latest == true }}
+        run: |
           # Also create latest tag
           docker buildx imagetools create -t ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:latest \
             ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64 \
