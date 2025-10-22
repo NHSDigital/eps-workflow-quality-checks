@@ -419,10 +419,12 @@ jobs:
           ref: ${{ env.BRANCH_NAME }}
           fetch-depth: 0
 
-      - name: Install Docker with Colima
+      - name: Install Docker with Lima
         run: |
-          brew install docker colima
-          colima start
+          brew install docker lima
+          limactl start template://docker
+          DOCKER_HOST=$(limactl list docker --format 'unix://{{.Dir}}/sock/docker.sock')
+          export DOCKER_HOST
 
       - name: Build dev container
         run: |
