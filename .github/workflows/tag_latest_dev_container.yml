@@ -19,7 +19,7 @@ on:
                 description: "The version tag to apply to the latest dev container image."
                 required: true
 jobs:
-    create_multi_arch_manifest:
+    tag_latest_dev_container:
         permissions:
             id-token: write
         runs-on: ubuntu-22.04
