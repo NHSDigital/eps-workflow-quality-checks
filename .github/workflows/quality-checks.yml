@@ -20,7 +20,10 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
-
+      asdfVersion:
+        type: string
+        required: false
+        default: "v0.18.0"
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
@@ -71,23 +74,23 @@ jobs:
 
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
-        uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+        uses: asdf-vm/actions/setup@1902764435ca0dd2f3388eea723a4f92a4eb8302
         with:
-          asdf_branch: v0.14.1
+          asdf_version: ${{ inputs.asdfVersion }}
 
       - name: Cache asdf
         uses: actions/cache@v4
         with:
           path: |
             ~/.asdf
-          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
+          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}-${{ inputs.asdfVersion }}
           restore-keys: |
-            ${{ runner.os }}-asdf-
+            ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}-${{ inputs.asdfVersion }}
 
       - name: Install asdf dependencies in .tool-versions
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+        uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302
         with:
-          asdf_branch: v0.14.1
+          asdf_version: ${{ inputs.asdfVersion }}
         env:
           PYTHON_CONFIGURE_OPTS: --enable-shared
 
@@ -354,3 +357,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build_dev_container:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0
+
+      - name: Build dev container
+        run: |
+          docker buildx create --use
+          docker buildx build --platform linux/amd64,linux/arm64 -f .devcontainer/Dockerfile -t dev-container-image .
