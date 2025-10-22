@@ -367,6 +367,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   build_dev_container_x64:
+    permissions:
+      id-token: write
     runs-on: ubuntu-22.04
     if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
@@ -404,6 +406,8 @@ jobs:
           docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64"
 
   build_dev_container_arm64:
+    permissions:
+      id-token: write
     runs-on: ubuntu-22.04-arm
     if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
@@ -441,6 +445,8 @@ jobs:
           docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64"
 
   create_multi_arch_manifest:
+    permissions:
+      id-token: write
     runs-on: ubuntu-22.04
     needs: [build_dev_container_x64, build_dev_container_arm64]
     if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
