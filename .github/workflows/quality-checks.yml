@@ -396,11 +396,12 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-amd64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .workflow-github/.github/scripts
+        working-directory: .workflow-github/
         run: |
+          ls -la .
           # Wait a moment for ECR to process the new manifest
           sleep 30
-          ./check_ecr_image_scan_results.sh
+          ./.github/scripts/check_ecr_image_scan_results.sh
 
   build_dev_container_arm64:
     permissions:
@@ -454,11 +455,13 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-arm64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .workflow-github/.github/scripts
+        working-directory: .workflow-github/
         run: |
+          # List files recursively first
+          ls -la .
           # Wait a moment for ECR to process the new manifest
           sleep 30
-          ./check_ecr_image_scan_results.sh
+          ./.github/scripts/check_ecr_image_scan_results.sh
 
   create_multi_arch_manifest:
     permissions:
