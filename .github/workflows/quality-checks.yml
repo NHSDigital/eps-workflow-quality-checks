@@ -408,6 +408,7 @@ jobs:
         env:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-amd64
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         working-directory: .github/scripts
         run: |
           # Wait a moment for ECR to process the new manifest
@@ -456,6 +457,7 @@ jobs:
         env:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-arm64
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         working-directory: .github/scripts
         run: |
           # Wait a moment for ECR to process the new manifest

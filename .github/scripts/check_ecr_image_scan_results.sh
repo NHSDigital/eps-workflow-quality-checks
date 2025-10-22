@@ -20,7 +20,7 @@ if [ -z "${AWS_REGION}" ]; then
 fi
 
 if [ -z "${ACCOUNT_ID}" ]; then
-  echo "AWS_REGION not set"
+  echo "ACCOUNT_ID not set"
   exit 1
 fi
 
