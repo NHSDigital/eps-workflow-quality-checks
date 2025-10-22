@@ -404,6 +404,15 @@ jobs:
         run: |
           docker tag "dev-container-image" "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64"
           docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64"
+      - name: Check dev container scan results
+        env:
+          REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-amd64
+        working-directory: .github/scripts
+        run: |
+          # Wait a moment for ECR to process the new manifest
+          sleep 30
+          ./check_ecr_image_scan_results.sh
 
   build_dev_container_arm64:
     permissions:
@@ -443,6 +452,15 @@ jobs:
         run: |
           docker tag "dev-container-image-arm" "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64"
           docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64"
+      - name: Check dev container scan results
+        env:
+          REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-arm64
+        working-directory: .github/scripts
+        run: |
+          # Wait a moment for ECR to process the new manifest
+          sleep 30
+          ./check_ecr_image_scan_results.sh
 
   create_multi_arch_manifest:
     permissions:
@@ -494,13 +512,3 @@ jobs:
         run: |
           echo "=== Verifying multi-architecture manifest ==="
           docker buildx imagetools inspect ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}
-
-      - name: Check dev container scan results
-        env:
-          REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
-          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}
-        working-directory: .github/scripts
-        run: |
-          # Wait a moment for ECR to process the new manifest
-          sleep 30
-          ./check_ecr_image_scan_results.sh
