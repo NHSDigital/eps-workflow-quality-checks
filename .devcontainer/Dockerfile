@@ -21,7 +21,8 @@ RUN git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.11.3; \
 ENV PATH="$PATH:/home/vscode/.asdf/bin/:/workspaces/eps-prescription-tracker-ui/node_modules/.bin"
 
 # Install ASDF plugins#
-RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git; \
+    asdf plugin add actionlint;
 
 WORKDIR /workspaces/eps-workflow-quality-checks
 
