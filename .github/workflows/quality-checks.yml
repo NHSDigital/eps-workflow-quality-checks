@@ -411,6 +411,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout .github folder from workflow repo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.repository }}
+          path: .workflow-github
+          sparse-checkout: |
+            .github
+          sparse-checkout-cone-mode: false
+
       - name: Build dev container
         run: |
           docker build -f .devcontainer/Dockerfile -t dev-container-image-arm .
