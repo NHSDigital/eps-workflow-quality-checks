@@ -361,8 +361,7 @@ jobs:
           ref: ${{ github.action_ref }}
           path: .workflow-github
           sparse-checkout: |
-            .github
-          sparse-checkout-cone-mode: false
+            .github/scripts/check_ecr_image_scan_results.sh
 
       - name: Build dev container
         run: |
@@ -420,8 +419,7 @@ jobs:
           ref: ${{ github.action_ref }}
           path: .workflow-github
           sparse-checkout: |
-            .github
-          sparse-checkout-cone-mode: false
+            .github/scripts/check_ecr_image_scan_results.sh
 
       - name: Build dev container
         run: |
