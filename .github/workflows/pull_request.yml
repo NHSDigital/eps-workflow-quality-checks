@@ -30,6 +30,8 @@ jobs:
   quality_checks:
     uses: ./.github/workflows/quality-checks.yml
     needs: [get_asdf_version]
+    with:
+      asdfVersion: ${{ needs.get_asdf_version.outputs.asdf_version }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   tag_release:
