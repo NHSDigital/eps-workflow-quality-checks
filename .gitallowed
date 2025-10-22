@@ -1,0 +1,2 @@
+token: ?"?\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}"?
+.*\.gitallowed.*
