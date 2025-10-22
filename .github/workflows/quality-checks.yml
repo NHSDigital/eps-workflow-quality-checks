@@ -354,6 +354,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout .github folder from workflow repo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.repository }}
+          path: .workflow-github
+          sparse-checkout: |
+            .github
+          sparse-checkout-cone-mode: false
+
       - name: Build dev container
         run: |
           docker build -f .devcontainer/Dockerfile -t dev-container-image .
@@ -386,7 +395,7 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-amd64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .github/scripts
+        working-directory: .workflow-github/.github/scripts
         run: |
           # Wait a moment for ECR to process the new manifest
           sleep 30
@@ -434,7 +443,7 @@ jobs:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
           IMAGE_TAG: ${{ inputs.dev_container_image_tag }}-arm64
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
-        working-directory: .github/scripts
+        working-directory: .workflow-github/.github/scripts
         run: |
           # Wait a moment for ECR to process the new manifest
           sleep 30
@@ -447,12 +456,6 @@ jobs:
     needs: [build_dev_container_x64, build_dev_container_arm64]
     if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
-      - name: Checkout local github actions
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          sparse-checkout: |
-            .github
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
