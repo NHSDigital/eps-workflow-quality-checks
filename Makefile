@@ -11,8 +11,10 @@ install-python:
 deep-clean:
 	find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +
 
-check-licenses:
-	echo "Not implemented"
+check-licenses: check-licenses-python
+
+check-licenses-python:
+	scripts/check_python_licenses.sh
 
 lint: lint-githubactions lint-githubaction-scripts
 

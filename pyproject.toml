@@ -19,7 +19,7 @@ repository = "https://github.com/NHSDigital/eps-workflow-quality-checks"
 python = "^3.14"
 pre-commit = "^4.3.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pip-licenses = "^5.0.0"
 
 [tool.poetry.scripts]
