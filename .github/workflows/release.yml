@@ -26,7 +26,7 @@ jobs:
           TAG_FORMAT=$(yq '.TAG_FORMAT' .github/config/settings.yml)
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
   quality_checks:
-    uses: ./quality-checks.yml
+    uses: ./.github/workflows/quality-checks.yml
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   tag_release:

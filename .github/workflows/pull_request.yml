@@ -28,7 +28,7 @@ jobs:
           TAG_FORMAT=$(yq '.TAG_FORMAT' .github/config/settings.yml)
           echo "TAG_FORMAT=$TAG_FORMAT" >> "$GITHUB_OUTPUT"
   quality_checks:
-    uses: ./quality-checks.yml
+    uses: ./.github/workflows/quality-checks.yml
     needs: [get_asdf_version]
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -36,90 +36,9 @@ jobs:
     needs: [quality_checks, get_asdf_version]
     uses: NHSDigital/eps-workflow-semantic-release/.github/workflows/tag-release.yml@f80157cecce288dd175e61b477a1d2dbe9c88b99
     with:
-      dry_run: false
+      dry_run: true
       asdfVersion: ${{ needs.get_asdf_version.outputs.asdf_version }}
-      branch_name: main
+      branch_name: ${{ github.event.pull_request.head.ref }}
       publish_package: false
       tag_format: ${{ needs.get_asdf_version.outputs.tag_format }}
     secrets: inherit
-
-
-    runs-on: ubuntu-latest
-    outputs:
-      version_tag: ${{ steps.output_version_tag.outputs.VERSION_TAG }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ env.BRANCH_NAME }}
-          fetch-depth: 0
-
-      # using git commit sha for version of action to ensure we have stable version
-      - name: Install asdf
-        uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
-        with:
-          asdf_branch: v0.14.1
-  
-      - name: Cache asdf
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.asdf
-          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
-          restore-keys: |
-            ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
-
-      - name: Install asdf dependencies in .tool-versions
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
-        with:
-          asdf_branch: v0.14.1
-
-      - name: Install dependencies
-        run: |
-          make install
-  
-      - name: Set VERSION_TAG to be next tag varsion
-        id: output_version_tag
-        run: |
-          NEXT_VERSION=$(npx semantic-release --dry-run | grep -i 'The next release version is' | sed -E 's/.* ([[:digit:].]+)$/\1/')
-          tagFormat=$(node -e "const config=require('./release.config.js'); console.log(config.tagFormat)")
-          if [ "${tagFormat}" = "null" ]
-          then
-            tagFormat="v\${version}"
-          fi
-          # disabling shellcheck as replace does not work
-          # shellcheck disable=SC2001
-          VERSION_TAG=$(echo "$tagFormat" | sed "s/\${version}/$NEXT_VERSION/")
-          echo "## VERSION TAG : ${VERSION_TAG}" >> "$GITHUB_STEP_SUMMARY"
-          echo "VERSION_TAG=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
-          echo "VERSION_TAG=${VERSION_TAG}" >> "$GITHUB_ENV"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: tag release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npx semantic-release
-
-      - name: Get release for editing
-        id: get_release
-        # version 1.2.4
-        uses: cardinalby/git-get-release-action@5172c3a026600b1d459b117738c605fabc9e4e44
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tag: ${{ env.VERSION_TAG }}
-
-      - name: Edit Release
-        # version 1.2.0
-        uses: irongut/EditRelease@ccf529ad26dddf9996e7dd0f24ca5da4ea507cc2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          id: ${{ steps.get_release.outputs.id }}
-          body: |
-            ## Info
-            [See code diff](${{ github.event.compare }})
-            [Release workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            It was initialized by [${{ github.event.sender.login }}](${{ github.event.sender.html_url }})
