@@ -5,8 +5,8 @@ on:
     secrets:
       SONAR_TOKEN:
         required: false
-      CLOUD_FORMATION_DEPLOY_ROLE:
-        required: false
+      PUSH_IMAGE_ROLE:
+        required: true
     inputs:
       install_java:
         type: boolean
@@ -386,7 +386,7 @@ jobs:
         id: connect-aws-deploy
         with:
           aws-region: eu-west-2
-          role-to-assume: ${{ secrets.CLOUD_FORMATION_DEPLOY_ROLE }}
+          role-to-assume: ${{ secrets.PUSH_IMAGE_ROLE }}
           role-session-name: dev-container-build-x64
           output-credentials: true
 
@@ -425,7 +425,7 @@ jobs:
         id: connect-aws-deploy
         with:
           aws-region: eu-west-2
-          role-to-assume: ${{ secrets.CLOUD_FORMATION_DEPLOY_ROLE }}
+          role-to-assume: ${{ secrets.PUSH_IMAGE_ROLE }}
           role-session-name: dev-container-build-arm64
           output-credentials: true
 
@@ -458,7 +458,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: eu-west-2
-          role-to-assume: ${{ secrets.CLOUD_FORMATION_DEPLOY_ROLE }}
+          role-to-assume: ${{ secrets.PUSH_IMAGE_ROLE }}
           role-session-name: multi-arch-manifest
           output-credentials: true
 
