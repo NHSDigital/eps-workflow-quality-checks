@@ -451,6 +451,12 @@ jobs:
     needs: [build_dev_container_x64, build_dev_container_arm64]
     if: ${{ inputs.dev_container_ecr != '' && inputs.dev_container_image_tag != '' }}
     steps:
+      - name: Checkout local github actions
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            .github
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
