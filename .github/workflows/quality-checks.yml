@@ -23,10 +23,6 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
-      asdfVersion:
-        type: string
-        required: false
-        default: "v0.18.0"
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
