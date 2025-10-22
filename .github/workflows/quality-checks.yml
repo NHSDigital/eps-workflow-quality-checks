@@ -357,7 +357,8 @@ jobs:
       - name: Checkout .github folder from workflow repo
         uses: actions/checkout@v5
         with:
-          repository: ${{ github.repository }}
+          repository: ${{ github.action_repository }}
+          ref: ${{ github.action_ref }}
           path: .workflow-github
           sparse-checkout: |
             .github
@@ -414,7 +415,8 @@ jobs:
       - name: Checkout .github folder from workflow repo
         uses: actions/checkout@v5
         with:
-          repository: ${{ github.repository }}
+          repository: ${{ github.action_repository }}
+          ref: ${{ github.action_ref }}
           path: .workflow-github
           sparse-checkout: |
             .github
