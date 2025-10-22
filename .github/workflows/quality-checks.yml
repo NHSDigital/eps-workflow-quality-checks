@@ -356,7 +356,7 @@ jobs:
             echo "Checking all terraform plans in downloaded artifact with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
-                --data /tmp/terraform_plans \
+                --data terraform_plans \
                     --rules "/tmp/ruleset/output/$ruleset.guard" \
                 --show-summary fail \
                 > "cfn_guard_output/terraform_plans_$ruleset.txt"
