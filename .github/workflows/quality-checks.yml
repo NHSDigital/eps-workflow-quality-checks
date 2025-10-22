@@ -350,10 +350,6 @@ jobs:
         run: |
           #!/usr/bin/env bash
 
-          rm -rf /tmp/terraform_plans
-          mkdir /tmp/terraform_plans
-          unzip terraform_plans.zip -d /tmp/terraform_plans
-
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
