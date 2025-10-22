@@ -185,21 +185,6 @@ jobs:
             echo "cdk_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check for terraform
-        id: check_terraform
-        run: |
-          if [ -d "terraform" ]; then
-            echo "****************"
-            echo "Project has terraform"
-            echo "****************"
-            echo "terraform_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "****************"
-            echo "Project does not have terraform"
-            echo "****************"
-            echo "terraform_exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Check licenses (Makefile)
         run: |
           make check-licenses
@@ -340,13 +325,25 @@ jobs:
           done
 
       - name: Download terraform plans
-        if: steps.check_terraform.outputs.terraform_exists == 'true'
         uses: actions/download-artifact@v5
         with:
-          name: terraform_plans.zip
+          pattern: '*_terraform_plan'
+          path: terraform_plans/
+          merge-multiple: true
+
+      - name: Check terraform plans exist
+        id: check_terraform_plans
+        run: |
+          if [ ! -d terraform_plans ]; then
+            echo "Terraform plans not present."
+            echo "terraform_plans_exist=false" >> $GITHUB_OUTPUT
+          else
+            echo "Terraform plans present."
+            echo "terraform_plans_exist=true" >> $GITHUB_OUTPUT
+          fi
       
       - name: Run cfn-guard script for terraform plans
-        if: steps.check_cdk.outputs.terraform_exists == 'true'
+        if: steps.check_terraform_plans.outputs.terraform_plans_exist == 'true'
         run: |
           #!/usr/bin/env bash
 
