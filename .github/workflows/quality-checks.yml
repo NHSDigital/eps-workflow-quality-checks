@@ -19,7 +19,7 @@ on:
       asdfVersion:
         type: string
         required: false
-        default: "v0.18.0"
+        default: "0.18.0"
       reinstall_poetry:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
