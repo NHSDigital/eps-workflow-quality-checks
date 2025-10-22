@@ -339,10 +339,10 @@ jobs:
         run: |
           if [ ! -d terraform_plans ]; then
             echo "Terraform plans not present."
-            echo "terraform_plans_exist=false" >> $GITHUB_OUTPUT
+            echo "terraform_plans_exist=false" >> "$GITHUB_OUTPUT"
           else
             echo "Terraform plans present."
-            echo "terraform_plans_exist=true" >> $GITHUB_OUTPUT
+            echo "terraform_plans_exist=true" >> "$GITHUB_OUTPUT"
           fi
       
       - name: Run cfn-guard script for terraform plans
