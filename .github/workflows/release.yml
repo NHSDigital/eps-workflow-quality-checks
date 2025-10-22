@@ -48,7 +48,6 @@ jobs:
     uses: ./.github/workflows/quality-checks.yml
     with:
       asdfVersion: ${{ needs.get_asdf_version.outputs.asdf_version }}
-      tag_latest: true
       dev_container_ecr: dev-container-quality-checks
       dev_container_image_tag: release-${{ needs.get_commit_id.outputs.sha_short }}
     secrets:

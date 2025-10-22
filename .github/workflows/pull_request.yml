@@ -74,7 +74,6 @@ jobs:
       asdfVersion: ${{ needs.get_asdf_version.outputs.asdf_version }}
       dev_container_ecr: dev-container-quality-checks
       dev_container_image_tag: PR-${{ needs.get_issue_number_and_commit_id.outputs.issue_number }}-${{ needs.get_issue_number_and_commit_id.outputs.sha_short }}
-      tag_latest: false
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}

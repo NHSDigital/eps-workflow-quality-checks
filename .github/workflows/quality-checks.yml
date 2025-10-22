@@ -33,10 +33,6 @@ on:
         type: string
         description: "The tag to use for the dev container image."
         required: true
-      tag_latest:
-        type: boolean
-        description: "If true, the action will also tag the dev container image as 'latest' in ECR."
-        required: true
       check_ecr_image_scan_results_script_tag:
         type: string
         description: "The tag to download check_ecr_image_scan_results.sh script."
@@ -360,8 +356,10 @@ jobs:
           fetch-depth: 0
 
       - name: Download check_ecr_image_scan_results.sh script
+        env:
+          SCRIPT_TAG: ${{ inputs.check_ecr_image_scan_results_script_tag }}
         run: |
-          curl -L https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${{inputs.check_ecr_image_scan_results_script_tag}}/.github/scripts/check_ecr_image_scan_results.sh -o check_ecr_image_scan_results.sh
+          curl -L "https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${SCRIPT_TAG}/.github/scripts/check_ecr_image_scan_results.sh" -o check_ecr_image_scan_results.sh
           chmod +x check_ecr_image_scan_results.sh
       - name: Build dev container
         run: |
@@ -387,9 +385,13 @@ jobs:
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com
 
       - name: Push x64 image to Amazon ECR
+        env:
+          ECR_REPOSITORY: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         run: |
-          docker tag "dev-container-image" "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64"
-          docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64"
+          docker tag "dev-container-image" "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64"
+          docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64"
       - name: Check dev container scan results
         env:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
@@ -410,9 +412,14 @@ jobs:
           fetch-depth: 0
 
       - name: Download check_ecr_image_scan_results.sh script
+        env:
+          SCRIPT_TAG: ${{ inputs.check_ecr_image_scan_results_script_tag }}
         run: |
-          curl -L https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${{inputs.check_ecr_image_scan_results_script_tag}}/.github/scripts/check_ecr_image_scan_results.sh -o check_ecr_image_scan_results.sh
+          curl -L "https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/heads/${SCRIPT_TAG}/.github/scripts/check_ecr_image_scan_results.sh" -o check_ecr_image_scan_results.sh
           chmod +x check_ecr_image_scan_results.sh
+      - name: Build dev container
+        run: |
+          docker build -f .devcontainer/Dockerfile -t dev-container-image .
 
       - name: Build dev container
         run: |
@@ -438,9 +445,13 @@ jobs:
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com
 
       - name: Push ARM64 image to Amazon ECR
+        env:
+          ECR_REPOSITORY: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         run: |
-          docker tag "dev-container-image-arm" "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64"
-          docker push "${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64"
+          docker tag "dev-container-image-arm" "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
+          docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
       - name: Check dev container scan results
         env:
           REPOSITORY_NAME: ${{ inputs.dev_container_ecr }}
@@ -480,21 +491,21 @@ jobs:
           aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com
 
       - name: Create and push multi-architecture manifest for tag
+        env:
+          ECR_REPOSITORY: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         run: |
           # Create manifest list combining both architectures
-          docker buildx imagetools create -t ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }} \
-            ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64 \
-            ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64
-
-      - name: Create and push multi-architecture manifest for latest tag
-        if: ${{ inputs.tag_latest == true }}
-        run: |
-          # Also create latest tag
-          docker buildx imagetools create -t ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:latest \
-            ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-amd64 \
-            ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}-arm64
+          docker buildx imagetools create -t "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
+            "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
 
       - name: Verify multi-architecture manifest
+        env:
+          ECR_REPOSITORY: ${{ inputs.dev_container_ecr }}
+          IMAGE_TAG: ${{ inputs.dev_container_image_tag }}
+          ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         run: |
           echo "=== Verifying multi-architecture manifest ==="
-          docker buildx imagetools inspect ${{ steps.retrieve-deploy-account-id.outputs.account_id }}.dkr.ecr.eu-west-2.amazonaws.com/${{ inputs.dev_container_ecr }}:${{ inputs.dev_container_image_tag }}
+          docker buildx imagetools inspect "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
