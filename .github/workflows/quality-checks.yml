@@ -421,8 +421,13 @@ jobs:
 
       - name: Build dev container
         run: |
-          docker build -f .devcontainer/Dockerfile -t dev-container-image .
-
+          docker build -f .devcontainer/Dockerfile -t dev-container-image-arm .
+          docker save "dev-container-image-arm" -o dev-container-image-arm.img
+      - uses: actions/upload-artifact@v4
+        name: upload build artifact
+        with:
+          name: dev-container-image-arm
+          path: dev-container-image-arm.img
       # - name: Configure AWS Credentials
       #   uses: aws-actions/configure-aws-credentials@v5
       #   id: connect-aws-deploy
