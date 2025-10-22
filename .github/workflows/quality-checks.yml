@@ -397,7 +397,7 @@ jobs:
           ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
         run: |
           sleep 30
-          ./.github/scripts/check_ecr_image_scan_results.sh
+          ./check_ecr_image_scan_results.sh
 
   build_dev_container_arm64:
     permissions:
