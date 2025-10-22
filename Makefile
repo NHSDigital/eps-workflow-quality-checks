@@ -8,7 +8,7 @@ install-node:
 deep-clean:
 	find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +
 
-check-license:
+check-licenses:
 	echo "Not implemented"
 
 lint:
