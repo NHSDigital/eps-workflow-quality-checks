@@ -5,6 +5,8 @@ on:
     secrets:
       SONAR_TOKEN:
         required: false
+      CLOUD_FORMATION_DEPLOY_ROLE:
+        required: false
     inputs:
       install_java:
         type: boolean
@@ -23,6 +25,14 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
+      dev_container_ecr:
+        type: string
+        description: "The name of the ECR repository to push the dev container image to."
+        required: false
+      dev_container_image_tag:
+        type: string
+        description: "The tag to use for the dev container image."
+        required: false
 jobs:
   quality_checks:
     runs-on: ubuntu-22.04
@@ -357,7 +367,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  build_dev_container:
+  build_dev_container_x64:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -368,5 +378,78 @@ jobs:
 
       - name: Build dev container
         run: |
-          docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64 -f .devcontainer/Dockerfile -t dev-container-image .
+          docker build -f .devcontainer/Dockerfile -t dev-container-image .
+      # - name: Configure AWS Credentials
+      #   uses: aws-actions/configure-aws-credentials@v5
+      #   id: connect-aws-deploy
+      #   with:
+      #     aws-region: eu-west-2
+      #     role-to-assume: ${{ secrets.CLOUD_FORMATION_DEPLOY_ROLE }}
+      #     role-session-name: dev-container-build
+      #     output-credentials: true
+
+      # - name: Retrieve AWS Account ID
+      #   id: retrieve-deploy-account-id
+      #   run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
+
+      # - name: Login to Amazon ECR
+      #   id: login-ecr-push-image
+      #   run: |
+      #     aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com
+
+      # - name: Push FHIR Facade image to Amazon ECR
+      #   run: |
+      #     docker tag "dev-container-image" "${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/${{inputs.DEV_CONTAINER_ECR}}:${{ inputs.DEV_CONTAINER_IMAGE_TAG }}"
+      #     docker push "${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/${{inputs.DEV_CONTAINER_ECR}}:${{ inputs.DEV_CONTAINER_IMAGE_TAG }}"
+
+      # - name: Check dev container scan results
+      #   env:
+      #     REPOSITORY_NAME: ${{inputs.DEV_CONTAINER_ECR}}
+      #     IMAGE_TAG: ${{ inputs.DEV_CONTAINER_IMAGE_TAG }}
+      #   working-directory: .github/scripts
+      #   run: |
+      #     ./check_ecr_image_scan_results.sh
+
+  build_dev_container_arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0
+
+      - name: Build dev container
+        run: |
+          docker build -f .devcontainer/Dockerfile -t dev-container-image .
+
+      # - name: Configure AWS Credentials
+      #   uses: aws-actions/configure-aws-credentials@v5
+      #   id: connect-aws-deploy
+      #   with:
+      #     aws-region: eu-west-2
+      #     role-to-assume: ${{ secrets.CLOUD_FORMATION_DEPLOY_ROLE }}
+      #     role-session-name: dev-container-build
+      #     output-credentials: true
+
+      # - name: Retrieve AWS Account ID
+      #   id: retrieve-deploy-account-id
+      #   run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
+
+      # - name: Login to Amazon ECR
+      #   id: login-ecr-push-image
+      #   run: |
+      #     aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com
+
+      # - name: Push FHIR Facade image to Amazon ECR
+      #   run: |
+      #     docker tag "dev-container-image" "${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/${{inputs.DEV_CONTAINER_ECR}}:${{ inputs.DEV_CONTAINER_IMAGE_TAG }}"
+      #     docker push "${{ env.ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/${{inputs.DEV_CONTAINER_ECR}}:${{ inputs.DEV_CONTAINER_IMAGE_TAG }}"
+
+      # - name: Check dev container scan results
+      #   env:
+      #     REPOSITORY_NAME: ${{inputs.DEV_CONTAINER_ECR}}
+      #     IMAGE_TAG: ${{ inputs.DEV_CONTAINER_IMAGE_TAG }}
+      #   working-directory: .github/scripts
+      #   run: |
+      #     ./check_ecr_image_scan_results.sh
