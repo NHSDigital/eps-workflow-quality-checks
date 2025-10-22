@@ -217,7 +217,7 @@ jobs:
           fi
 
           # known packages with dual licensing
-          IGNORE_PACKAGES="PyGithub chardet text-unidecode"
+          IGNORE_PACKAGES='"PyGithub" "chardet" "text-unidecode"'
           LICENSES=$(poetry run pip-licenses  --ignore-packages "${IGNORE_PACKAGES}")
           INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
 
