@@ -16,6 +16,9 @@ on:
         description: Toggle to run sonar code analyis on this repository.
         default: true
         required: false
+      asdfVersion:
+        type: string
+        required: true
       reinstall_poetry:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
@@ -28,8 +31,8 @@ jobs:
       - uses: actions/setup-java@v5
         if: ${{ inputs.install_java }}
         with:
-          java-version: '21'
-          distribution: 'corretto'
+          java-version: "21"
+          distribution: "corretto"
 
       - name: Checkout code
         uses: actions/checkout@v5
@@ -71,23 +74,23 @@ jobs:
 
       # using git commit sha for version of action to ensure we have stable version
       - name: Install asdf
-        uses: asdf-vm/actions/setup@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+        uses: asdf-vm/actions/setup@1902764435ca0dd2f3388eea723a4f92a4eb8302
         with:
-          asdf_branch: v0.14.1
+          asdf_version: ${{ inputs.asdfVersion }}
 
       - name: Cache asdf
         uses: actions/cache@v4
         with:
           path: |
             ~/.asdf
-          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}
+          key: ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}-${{ inputs.asdfVersion }}
           restore-keys: |
-            ${{ runner.os }}-asdf-
+            ${{ runner.os }}-asdf-${{ hashFiles('**/.tool-versions') }}-${{ inputs.asdfVersion }}
 
       - name: Install asdf dependencies in .tool-versions
-        uses: asdf-vm/actions/install@05e0d2ed97b598bfce82fd30daf324ae0c4570e6
+        uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302
         with:
-          asdf_branch: v0.14.1
+          asdf_version: ${{ inputs.asdfVersion }}
         env:
           PYTHON_CONFIGURE_OPTS: --enable-shared
 
@@ -96,7 +99,7 @@ jobs:
         run: |
           poetry_tool_version=$(cat .tool-versions | grep poetry)
           poetry_version=${poetry_tool_version//"poetry "}
-          asdf uninstall poetry $poetry_version
+          asdf uninstall poetry "$poetry_version"
           asdf install poetry
 
       - name: Setting up .npmrc
@@ -113,16 +116,16 @@ jobs:
       - name: Check if project uses Poetry
         id: check_poetry
         run: |
-          if [ -f pyproject.toml ] && grep -q '\[tool.poetry\]' pyproject.toml; then
+          if [ -f "pyproject.toml" ] && grep -q '\[tool.poetry\]' "pyproject.toml"; then
             echo "****************"
             echo "Project uses poetry"
             echo "****************"
-            echo "uses_poetry=true" >> $GITHUB_OUTPUT
+            echo "uses_poetry=true" >> "$GITHUB_OUTPUT"
           else
             echo "****************"
             echo "Project does not use poetry"
             echo "****************"
-            echo "uses_poetry=false" >> $GITHUB_OUTPUT
+            echo "uses_poetry=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check if project uses Java
@@ -132,14 +135,14 @@ jobs:
             echo "****************"
             echo "Detected a Java project"
             echo "****************"
-            echo "uses_java=true" >> $GITHUB_OUTPUT
+            echo "uses_java=true" >> "$GITHUB_OUTPUT"
           else
             echo "****************"
             echo "Project does not use Java"
             echo "****************"
-            echo "uses_java=false" >> $GITHUB_OUTPUT
+            echo "uses_java=false" >> "$GITHUB_OUTPUT"
           fi
-    
+
       - name: Check for SAM templates
         id: check_sam_templates
         run: |
@@ -147,12 +150,12 @@ jobs:
             echo "****************"
             echo "Project has SAM templates"
             echo "****************"
-            echo "sam_exists=true" >> $GITHUB_OUTPUT
+            echo "sam_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "****************"
             echo "Project does not have SAM templates"
             echo "****************"
-            echo "sam_exists=false" >> $GITHUB_OUTPUT
+            echo "sam_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check for cloudformation templates
@@ -162,14 +165,14 @@ jobs:
             echo "****************"
             echo "Project has cloudformation templates"
             echo "****************"
-            echo "cf_exists=true" >> $GITHUB_OUTPUT
+            echo "cf_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "****************"
             echo "Project does not have cloudformation templates"
             echo "****************"
-            echo "cf_exists=false" >> $GITHUB_OUTPUT
+            echo "cf_exists=false" >> "$GITHUB_OUTPUT"
           fi
-  
+
       - name: Check for cdk
         id: check_cdk
         run: |
@@ -177,12 +180,12 @@ jobs:
             echo "****************"
             echo "Project has cdk"
             echo "****************"
-            echo "cdk_exists=true" >> $GITHUB_OUTPUT
+            echo "cdk_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "****************"
             echo "Project does not have cdk"
             echo "****************"
-            echo "cdk_exists=false" >> $GITHUB_OUTPUT
+            echo "cdk_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check licenses (Makefile)
@@ -203,7 +206,7 @@ jobs:
 
           # known packages with dual licensing
           IGNORE_PACKAGES="PyGithub chardet text-unidecode"
-          LICENSES=$(poetry run pip-licenses  --ignore-packages ${IGNORE_PACKAGES})
+          LICENSES=$(poetry run pip-licenses  --ignore-packages "${IGNORE_PACKAGES}")
           INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
 
           if [[ -z $INCOMPATIBLE_LIBS ]]; then
@@ -214,7 +217,7 @@ jobs:
               echo "$INCOMPATIBLE_LIBS"
               exit 1
           fi
-  
+
       - name: Run code lint
         run: make lint
 
@@ -239,12 +242,12 @@ jobs:
 
       - name: Run unit tests
         run: make test
-  
+
       - name: Run cdk-synth
         if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
           make cdk-synth
-  
+
       - name: Install AWS SAM CLI
         if: steps.check_sam_templates.outputs.sam_exists == 'true'
         run: |
@@ -378,8 +381,8 @@ jobs:
         uses: NHSDigital/eps-action-sbom@main
 
       - name: "check is SONAR_TOKEN exists"
-        env: 
-            super_secret: ${{ secrets.SONAR_TOKEN }}
+        env:
+          super_secret: ${{ secrets.SONAR_TOKEN }}
         if: ${{ env.super_secret != '' && inputs.run_sonar == true }}
         run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
 
