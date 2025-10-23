@@ -83,7 +83,7 @@ jobs:
     needs: [get_asdf_version, get_issue_number_and_commit_id]
     with:
       git_secrets_container_ecr: dev-container-quality-checks
-      git_secrets_container_image_tag: PR-${{ needs.get_issue_number_and_commit_id.outputs.issue_number }}-${{ needs.get_issue_number_and_commit_id.outputs.sha_short }}
+      git_secrets_container_image_tag: PR-${{ needs.get_issue_number_and_commit_id.outputs.issue_number }}-${{ needs.get_issue_number_and_commit_id.outputs.sha_short }}-nhsd-git-secrets
     secrets:
       PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}
 
