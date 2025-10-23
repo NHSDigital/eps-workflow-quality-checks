@@ -341,7 +341,8 @@ jobs:
             echo "Terraform plans not present."
             echo "terraform_plans_exist=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Terraform plans present."
+            echo "Terraform plans present:"
+            ls -l terraform_plans/
             echo "terraform_plans_exist=true" >> "$GITHUB_OUTPUT"
           fi
       
@@ -353,7 +354,7 @@ jobs:
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
-            echo "Checking all terraform plans in downloaded artifact with ruleset $ruleset"
+            echo "Checking terraform plans with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
                 --data terraform_plans \
