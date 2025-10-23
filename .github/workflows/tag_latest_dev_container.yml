@@ -67,23 +67,32 @@ jobs:
                   ACCOUNT_ID: ${{ steps.retrieve-deploy-account-id.outputs.account_id }}
                   VERSION_TAG_TO_APPLY: ${{ inputs.version_tag_to_apply }}
               run: |
-                  # Tag the image (this creates an alias without pulling)
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
-                      "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-amd64"
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64" \
-                      "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-arm64"
+                  # Get the image manifest
+                  MANIFEST=$(aws ecr batch-get-image \
+                      --repository-name "${ECR_REPOSITORY}" \
+                      --image-ids imageTag="${IMAGE_TAG}-amd64" \
+                      --output text --query 'images[].imageManifest')
 
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
-                      "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-amd64"
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64" \
-                      "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-arm64"
+                  # Put the image with a new tag using the same manifest
+                  aws ecr put-image --repository-name "${ECR_REPOSITORY}" \
+                    --image-manifest "$MANIFEST" \
+                    --image-tag "${VERSION_TAG_TO_APPLY}-amd64"
+                  aws ecr put-image --repository-name "${ECR_REPOSITORY}" \
+                    --image-manifest "$MANIFEST" \
+                    --image-tag latest-amd64
 
-                  # Push the new tags
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-amd64"
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-arm64"
+                  MANIFEST=$(aws ecr batch-get-image \
+                      --repository-name "${ECR_REPOSITORY}" \
+                      --image-ids imageTag="${IMAGE_TAG}-arm64" \
+                      --output text --query 'images[].imageManifest')
 
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-amd64"
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-arm64"
+                  # Put the image with a new tag using the same manifest
+                  aws ecr put-image --repository-name "${ECR_REPOSITORY}" \
+                    --image-manifest "$MANIFEST" \
+                    --image-tag "${VERSION_TAG_TO_APPLY}-arm64"
+                  aws ecr put-image --repository-name "${ECR_REPOSITORY}" \
+                    --image-manifest "$MANIFEST" \
+                    --image-tag latest-arm64
 
             - name: Verify multi-architecture manifest
               env:
