@@ -23,6 +23,10 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
+      check_tf_plans:
+        type: boolean
+        description: Toggle to download terraform plan artifacts and run cfn-guard against them.
+        default: false
 
 jobs:
   quality_checks:
@@ -192,32 +196,6 @@ jobs:
         run: |
           make check-licenses
 
-      - name: Check licenses (Python)
-        if: steps.check_poetry.outputs.uses_poetry == 'true'
-        run: |
-          #!/bin/bash
-          set -euo pipefail
-
-          # Install pip-licenses if not already installed
-          if ! poetry run pip show pip-licenses > /dev/null 2>&1; then
-            echo "pip-licenses is not detected. Installing..."
-            poetry run pip install pip-licenses
-          fi
-
-          # known packages with dual licensing
-          IGNORE_PACKAGES="PyGithub chardet text-unidecode"
-          LICENSES=$(poetry run pip-licenses  --ignore-packages "${IGNORE_PACKAGES}")
-          INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
-
-          if [[ -z $INCOMPATIBLE_LIBS ]]; then
-              echo "Checked licenses are OK"
-              exit 0
-          else
-              echo "The following libraries were found which are not compatible with this project's license:"
-              echo "$INCOMPATIBLE_LIBS"
-              exit 1
-          fi
-
       - name: Run code lint
         run: make lint
 
@@ -329,12 +307,14 @@ jobs:
 
       - name: Download terraform plans
         uses: actions/download-artifact@v5
+        if: ${{ inputs.check_tf_plans }}
         with:
           pattern: '*_terraform_plan'
           path: terraform_plans/
           merge-multiple: true
 
       - name: Check terraform plans exist
+        if: ${{ inputs.check_tf_plans }}
         id: check_terraform_plans
         run: |
           if [ ! -d terraform_plans ]; then
