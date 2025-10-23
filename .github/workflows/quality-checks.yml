@@ -23,10 +23,6 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
-      check_tf_plans:
-        type: boolean
-        description: Toggle to download terraform plan artifacts and run cfn-guard against them.
-        default: false
 
 jobs:
   quality_checks:
@@ -307,14 +303,12 @@ jobs:
 
       - name: Download terraform plans
         uses: actions/download-artifact@v5
-        if: ${{ inputs.check_tf_plans }}
         with:
           pattern: '*_terraform_plan'
           path: terraform_plans/
           merge-multiple: true
 
       - name: Check terraform plans exist
-        if: ${{ inputs.check_tf_plans }}
         id: check_terraform_plans
         run: |
           if [ ! -d terraform_plans ]; then
