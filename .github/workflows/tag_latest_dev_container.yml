@@ -60,21 +60,15 @@ jobs:
                     "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
                     "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
 
-                  # Apply additional tags to individual architecture images
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
-                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-amd64"
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64" \
-                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-arm64"
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64" \
-                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-amd64"
-                  docker tag "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64" \
-                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-arm64"
-
-                  # Push the tagged images
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-amd64"
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-arm64"
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-amd64"
-                  docker push "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-arm64"
+                  # Create additional tags for individual architecture images without pulling
+                  docker buildx imagetools create -t "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-amd64" \
+                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64"
+                  docker buildx imagetools create -t "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${VERSION_TAG_TO_APPLY}-arm64" \
+                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
+                  docker buildx imagetools create -t "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-amd64" \
+                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-amd64"
+                  docker buildx imagetools create -t "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:latest-arm64" \
+                    "${ACCOUNT_ID}.dkr.ecr.eu-west-2.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}-arm64"
 
             - name: Verify multi-architecture manifest
               env:
