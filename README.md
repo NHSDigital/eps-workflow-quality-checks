@@ -11,15 +11,18 @@ It also contains a dockerfile that builds an image that contains git-secrets whi
 
 The main quality checks workflow runs comprehensive checks for EPS repositories. The steps executed by this workflow are as follows:
 
-- **Install Project Dependencies**
-- **Generate and Check SBOMs**: Creates Software Bill of Materials (SBOMs) to track dependencies for security and compliance. Uses [THIS](https://github.com/NHSDigital/eps-action-sbom) action.
-- **Run Linting**
-- **Run Unit Tests**
 - **Scan git history for secrets**: Scans for secret-like patterns, using https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets
-- **SonarCloud Scan**: Performs code analysis using SonarCloud to detect quality issues and vulnerabilities.
-- **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
-- **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
+- **Install Project Dependencies**
 - **Check Licenses**: Runs `make check-licenses`.
+- **Run Linting** Runs `make lint`.
+- **Run actionlint** Runs actionlint using [actionlint](https://github.com/raven-actions/actionlint)
+- **Run shellcheck**: Runs shellcheck using [action-shellcheck](https://github.com/ludeeus/action-shellcheck)
+- **Run cfn-lint** Runs [cfn-lint](https://github.com/aws-cloudformation/cfn-lint) against files in cloudformation and SAMtemplates folders
+- **Run Unit Tests**  Runs `make test`.
+- **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
+- **Run cloudformation-guard** (*Conditional*): Runs [cfn-guard](https://github.com/aws-cloudformation/cloudformation-guard) if CloudFormation, AWS SAM templates or CDK are present
+- **Generate and Check SBOMs**: Creates Software Bill of Materials (SBOMs) to track dependencies for security and compliance. Uses [THIS](https://github.com/NHSDigital/eps-action-sbom) action.
+- **SonarCloud Scan**: Performs code analysis using SonarCloud to detect quality issues and vulnerabilities.
 -- **Build dev containers**: Builds dev containers (for x64 and arm64 architecture), pushes to ECR and checks vulnerability scan results
 
 

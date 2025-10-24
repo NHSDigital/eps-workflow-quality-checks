@@ -209,10 +209,10 @@ jobs:
         run: make lint
 
       - name: actionlint
-        uses: raven-actions/actionlint@v2
+        uses: raven-actions/actionlint@3a24062651993d40fed1019b58ac6fbdfbf276cc
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38
         with:
           ignore_paths: >-
             *test*
