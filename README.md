@@ -1,7 +1,13 @@
 # eps-workflow-quality-checks
 
+This repository provides reusable GitHub Actions workflows for EPS repositories:
 
-A workflow to run the quality checks for EPS repositories. The main element of this lives in the [`quality-checks.yml`](./.github/workflows/quality-checks.yml) configuration file. The steps executed by this workflow are as follows:
+1. **Quality Checks Workflow** ([`quality-checks.yml`](./.github/workflows/quality-checks.yml)) - Comprehensive quality checks including linting, testing, security scanning, and dev container building
+2. **Tag Latest Dev Container Workflow** ([`tag_latest_dev_container.yml`](./.github/workflows/tag_latest_dev_container.yml)) - Tags dev container images with version and latest tags
+
+## Quality Checks Workflow
+
+The main quality checks workflow runs comprehensive checks for EPS repositories. The steps executed by this workflow are as follows:
 
 - **Install Project Dependencies**
 - **Generate and Check SBOMs**: Creates Software Bill of Materials (SBOMs) to track dependencies for security and compliance. Uses [THIS](https://github.com/NHSDigital/eps-action-sbom) action.
@@ -52,7 +58,7 @@ repos:
       language: system
 ```
 
-# Usage
+# Quality Checks Workflow Usage
 
 ## Inputs
 
@@ -119,7 +125,7 @@ The workflow requires the following secrets:
 - **Required**: true
 - **Description**: AWS IAM role ARN used to authenticate and push dev container images to ECR.
 
-# Example Workflow Call
+## Example Workflow Call
 
 To use this workflow in your repository, call it from another workflow file:
 
@@ -146,5 +152,59 @@ jobs:
       check_ecr_image_scan_results_script_tag: "dev_container_build"
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      PUSH_IMAGE_ROLE: ${{ secrets.DEV_CONTAINER_PUSH_IMAGE_ROLE }}
+```
+
+# Tag Latest Dev Container Workflow
+
+This repository also provides a reusable workflow [`tag_latest_dev_container.yml`](./.github/workflows/tag_latest_dev_container.yml) for tagging dev container images with version tags and `latest` in ECR.
+
+## Purpose
+
+This workflow takes existing dev container images (built for both x64 and arm64 architectures) and applies additional tags to them, including:
+- A custom version tag (e.g., `v1.0.0`)
+- The `latest` tag
+- Architecture-specific tags (e.g., `v1.0.0-amd64`, `latest-arm64`)
+
+## Inputs
+
+### `dev_container_ecr`
+- **Type**: string
+- **Required**: true
+- **Description**: The name of the ECR repository containing the dev container images.
+
+### `dev_container_image_tag`
+- **Type**: string
+- **Required**: true
+- **Description**: The current tag of the dev container images to be re-tagged (should exist for both `-amd64` and `-arm64` suffixes).
+
+### `version_tag_to_apply`
+- **Type**: string
+- **Required**: true
+- **Description**: The version tag to apply to the dev container images (e.g., `v1.0.0`).
+
+## Secrets
+
+### `PUSH_IMAGE_ROLE`
+- **Required**: true
+- **Description**: AWS IAM role ARN used to authenticate and push images to ECR.
+
+## Example Usage
+
+```yaml
+name: Tag Dev Container as Latest
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  tag_dev_container:
+    uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/tag_latest_dev_container.yml@main
+    with:
+      dev_container_ecr: "your-ecr-repo-name"
+      dev_container_image_tag: "build-123"  # The tag created by quality-checks workflow
+      version_tag_to_apply: ${{ github.event.release.tag_name }}
+    secrets:
       PUSH_IMAGE_ROLE: ${{ secrets.DEV_CONTAINER_PUSH_IMAGE_ROLE }}
 ```
