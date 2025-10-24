@@ -10,6 +10,7 @@ A workflow to run the quality checks for EPS repositories. The main element of t
 - **Scan git history for secrets**: Scans for secret-like patterns, using https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets
 - **SonarCloud Scan**: Performs code analysis using SonarCloud to detect quality issues and vulnerabilities.
 - **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
+- **Validate Terraform Plans** Terraform plans can also be scanned by `cfn-guard` by uploading plans as artefacts in the calling workflow. All Terraform plans must end _terraform_plan and be in json format.
 - **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
 - **Check Licenses**: Runs `make check-licenses`.
 - **Check Python Licenses** (*Conditional*): If the project uses Poetry, scans Python dependencies for incompatible licenses.

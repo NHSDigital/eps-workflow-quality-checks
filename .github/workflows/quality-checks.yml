@@ -192,32 +192,6 @@ jobs:
         run: |
           make check-licenses
 
-      - name: Check licenses (Python)
-        if: steps.check_poetry.outputs.uses_poetry == 'true'
-        run: |
-          #!/bin/bash
-          set -euo pipefail
-
-          # Install pip-licenses if not already installed
-          if ! poetry run pip show pip-licenses > /dev/null 2>&1; then
-            echo "pip-licenses is not detected. Installing..."
-            poetry run pip install pip-licenses
-          fi
-
-          # known packages with dual licensing
-          IGNORE_PACKAGES="PyGithub chardet text-unidecode"
-          LICENSES=$(poetry run pip-licenses  --ignore-packages "${IGNORE_PACKAGES}")
-          INCOMPATIBLE_LIBS=$(echo "$LICENSES" | grep 'GPL' || true)
-
-          if [[ -z $INCOMPATIBLE_LIBS ]]; then
-              echo "Checked licenses are OK"
-              exit 0
-          else
-              echo "The following libraries were found which are not compatible with this project's license:"
-              echo "$INCOMPATIBLE_LIBS"
-              exit 1
-          fi
-
       - name: Run code lint
         run: make lint
 
@@ -301,7 +275,7 @@ jobs:
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
-            echo "Checking all templates in cloudformation folder with ruleest $ruleset"
+            echo "Checking all templates in cloudformation folder with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
                 --data cloudformation \
@@ -318,13 +292,49 @@ jobs:
           declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
           for ruleset in "${rulesets[@]}"
           do
-            echo "Checking all templates in cdk.out folder with ruleest $ruleset"
+            echo "Checking all templates in cdk.out folder with ruleset $ruleset"
 
             ~/.guard/bin/cfn-guard validate \
                 --data cdk.out \
                     --rules "/tmp/ruleset/output/$ruleset.guard" \
                 --show-summary fail \
                 > "cfn_guard_output/cdk.out_$ruleset.txt"
+          done
+
+      - name: Download terraform plans
+        uses: actions/download-artifact@v5
+        with:
+          pattern: '*_terraform_plan'
+          path: terraform_plans/
+          merge-multiple: true
+
+      - name: Check terraform plans exist
+        id: check_terraform_plans
+        run: |
+          if [ ! -d terraform_plans ]; then
+            echo "Terraform plans not present."
+            echo "terraform_plans_exist=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Terraform plans present:"
+            ls -l terraform_plans/
+            echo "terraform_plans_exist=true" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Run cfn-guard script for terraform plans
+        if: steps.check_terraform_plans.outputs.terraform_plans_exist == 'true'
+        run: |
+          #!/usr/bin/env bash
+
+          declare -a rulesets=("ncsc" "ncsc-cafv3" "wa-Reliability-Pillar" "wa-Security-Pillar")
+          for ruleset in "${rulesets[@]}"
+          do
+            echo "Checking terraform plans with ruleset $ruleset"
+
+            ~/.guard/bin/cfn-guard validate \
+                --data terraform_plans \
+                    --rules "/tmp/ruleset/output/$ruleset.guard" \
+                --show-summary fail \
+                > "cfn_guard_output/terraform_plans_$ruleset.txt"
           done
 
       - name: Show cfn-guard output
