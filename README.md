@@ -56,7 +56,46 @@ repos:
 
 ## Inputs
 
-None
+The workflow accepts the following input parameters:
+
+### `install_java`
+- **Type**: boolean
+- **Required**: false
+- **Default**: false
+- **Description**: If true, the action will install Java into the runner, separately from ASDF.
+
+### `run_sonar`
+- **Type**: boolean
+- **Required**: false
+- **Default**: true
+- **Description**: Toggle to run SonarCloud code analysis on this repository.
+
+### `asdfVersion`
+- **Type**: string
+- **Required**: true
+- **Description**: The version of ASDF to use for managing runtime versions.
+
+### `reinstall_poetry`
+- **Type**: boolean
+- **Required**: false
+- **Default**: false
+- **Description**: Toggle to reinstall Poetry on top of the Python version installed by ASDF.
+
+### `dev_container_ecr`
+- **Type**: string
+- **Required**: true
+- **Description**: The name of the ECR repository to push the dev container image to.
+
+### `dev_container_image_tag`
+- **Type**: string
+- **Required**: true
+- **Description**: The tag to use for the dev container image.
+
+### `check_ecr_image_scan_results_script_tag`
+- **Type**: string
+- **Required**: false
+- **Default**: "dev_container_build"
+- **Description**: The tag to download the check_ecr_image_scan_results.sh script from.
 
 ## Required Makefile targets
 
@@ -68,11 +107,17 @@ In order to run, these `make` commands must be present. They may be mocked, if t
 - `check-licenses`
 - `cdk-synth` - only needed if packages/cdk folder exists
 
-## Environment variables
+## Secrets
+
+The workflow requires the following secrets:
 
 ### `SONAR_TOKEN`
+- **Required**: false
+- **Description**: Required for the SonarCloud Scan step, which analyzes your code for quality and security issues using SonarCloud.
 
-Required for the SonarCloud Scan step, which analyzes your code for quality and security issues using SonarCloud.
+### `PUSH_IMAGE_ROLE`
+- **Required**: true
+- **Description**: AWS IAM role ARN used to authenticate and push dev container images to ECR.
 
 # Example Workflow Call
 
@@ -90,6 +135,16 @@ on:
 jobs:
   quality_checks:
     uses: NHSDigital/eps-workflow-quality-checks/.github/workflows/quality-checks.yml@4.0.2
+    with:
+      asdfVersion: "v0.14.1"
+      dev_container_ecr: "your-ecr-repo-name"
+      dev_container_image_tag: "latest"
+      # Optional inputs
+      install_java: false
+      run_sonar: true
+      reinstall_poetry: false
+      check_ecr_image_scan_results_script_tag: "dev_container_build"
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      PUSH_IMAGE_ROLE: ${{ secrets.DEV_CONTAINER_PUSH_IMAGE_ROLE }}
 ```
