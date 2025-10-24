@@ -76,16 +76,16 @@ jobs:
       dev_container_image_tag: PR-${{ needs.get_issue_number_and_commit_id.outputs.issue_number }}-${{ needs.get_issue_number_and_commit_id.outputs.sha_short }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}
+      PUSH_IMAGE_ROLE: ${{ secrets.DEV_CONTAINER_PUSH_IMAGE_ROLE }}
 
-  build_nhsd_git_secrets_x64:
+  build_nhsd_git_secrets:
     uses: ./.github/workflows/build_nhsd_git_secrets.yml
     needs: [get_asdf_version, get_issue_number_and_commit_id]
     with:
       git_secrets_container_ecr: dev-container-quality-checks
       git_secrets_container_image_tag: PR-${{ needs.get_issue_number_and_commit_id.outputs.issue_number }}-${{ needs.get_issue_number_and_commit_id.outputs.sha_short }}-nhsd-git-secrets
     secrets:
-      PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}
+      PUSH_IMAGE_ROLE: ${{ secrets.DEV_CONTAINER_PUSH_IMAGE_ROLE }}
 
   tag_release:
     needs: [quality_checks, get_asdf_version]
