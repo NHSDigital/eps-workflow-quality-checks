@@ -248,11 +248,10 @@ jobs:
           rm -rf /tmp/ruleset
           rm -rf cfn_guard_output
 
-          wget -O /tmp/ruleset.zip https://github.com/aws-cloudformation/aws-guard-rules-registry/releases/download/1.0.2/ruleset-build-v1.0.2.zip >/dev/null 2>&1
-          unzip /tmp/ruleset.zip -d /tmp/ruleset/ >/dev/null 2>&1
-
-          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/aws-cloudformation/cloudformation-guard/main/install-guard.sh | sh >/dev/null 2>&1
-
+          wget -O /tmp/ruleset.zip https://github.com/aws-cloudformation/aws-guard-rules-registry/releases/download/1.0.2/ruleset-build-v1.0.2.zip
+          unzip /tmp/ruleset.zip -d /tmp/ruleset/
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/aws-cloudformation/cloudformation-guard/main/install-guard.sh -o /tmp/install-guard.sh
+          sh /tmp/install-guard.sh
           mkdir -p cfn_guard_output
 
       - name: Run cfn-guard script for sam templates
@@ -317,7 +316,7 @@ jobs:
       - name: Download terraform plans
         uses: actions/download-artifact@v5
         with:
-          pattern: '*_terraform_plan'
+          pattern: "*_terraform_plan"
           path: terraform_plans/
           merge-multiple: true
 
@@ -332,7 +331,7 @@ jobs:
             ls -l terraform_plans/
             echo "terraform_plans_exist=true" >> "$GITHUB_OUTPUT"
           fi
-      
+
       - name: Run cfn-guard script for terraform plans
         if: steps.check_terraform_plans.outputs.terraform_plans_exist == 'true'
         run: |
