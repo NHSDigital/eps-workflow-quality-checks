@@ -12,13 +12,14 @@ A workflow to run the quality checks for EPS repositories. The main element of t
 - **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
 - **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
 - **Check Licenses**: Runs `make check-licenses`.
-- **Check Python Licenses** (*Conditional*): If the project uses Poetry, scans Python dependencies for incompatible licenses.
+-- **Build dev containers**: Builds dev containers (for x64 and arm64 architecture), pushes to ECR and checks vulnerability scan results
 
 The secret scanning also has a dockerfile, which can be run against a repo in order to scan it manually (or as part of pre-commit hooks). This can be done like so:
 ```bash
 docker build -f https://raw.githubusercontent.com/NHSDigital/eps-workflow-quality-checks/refs/tags/v3.0.0/dockerfiles/nhsd-git-secrets.dockerfile -t git-secrets .
 docker run -v /path/to/repo:/src git-secrets --scan-history .
 ```
+Or it can be pulled from ECR
 For usage of the script, see the [source repo](https://github.com/NHSDigital/software-engineering-quality-framework/blob/main/tools/nhsd-git-secrets/git-secrets). Generally, you will either need `--scan -r .` or `--scan-history .`. The arguments default to `--scan -r .`, i.e. scanning the current state of the code.
 
 In order to enable the pre-commit hook for secret scanning (to prevent developers from committing secrets in the first place), add the following to the `.devcontainer/devcontainer.json` file:

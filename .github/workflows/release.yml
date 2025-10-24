@@ -63,3 +63,12 @@ jobs:
       publish_package: false
       tag_format: ${{ needs.get_asdf_version.outputs.tag_format }}
     secrets: inherit
+  tag_latest_dev_container:
+    needs: [quality_checks, get_commit_id, tag_release]
+    uses: ./.github/workflows/tag_latest_dev_container.yml
+    with:
+      dev_container_ecr: dev-container-quality-checks
+      dev_container_image_tag: release-${{ needs.get_commit_id.outputs.sha_short }}
+      version_tag_to_apply: ${{ needs.tag_release.outputs.version_tag }}
+    secrets:
+      PUSH_IMAGE_ROLE: ${{ secrets.PUSH_IMAGE_ROLE }}
