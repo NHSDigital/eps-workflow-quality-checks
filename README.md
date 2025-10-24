@@ -17,7 +17,8 @@ The main quality checks workflow runs comprehensive checks for EPS repositories.
 - **Run Linting** Runs `make lint`.
 - **Run actionlint** Runs actionlint using [actionlint](https://github.com/raven-actions/actionlint)
 - **Run shellcheck**: Runs shellcheck using [action-shellcheck](https://github.com/ludeeus/action-shellcheck)
-- **Run cfn-lint** Runs [cfn-lint](https://github.com/aws-cloudformation/cfn-lint) against files in cloudformation and SAMtemplates folders
+- **Validate CloudFormation Templates** (*Conditional*): If CloudFormation, AWS SAM templates or CDK are present, runs `cfn-lint` (SAM and cloudformation only) and `cfn-guard` to validate templates against AWS best practices and security rules.
+- **Validate Terraform Plans** Terraform plans can also be scanned by `cfn-guard` by uploading plans as artefacts in the calling workflow. All Terraform plans must end _terraform_plan and be in json format.
 - **Run Unit Tests**  Runs `make test`.
 - **CDK Synth** (*Conditional*): Runs `make cdk-synth` if packages/cdk folder exists
 - **Run cloudformation-guard** (*Conditional*): Runs [cfn-guard](https://github.com/aws-cloudformation/cloudformation-guard) if CloudFormation, AWS SAM templates or CDK are present
