@@ -23,6 +23,15 @@ on:
         type: boolean
         description: Toggle to reinstall poetry on top of python version installed by asdf.
         default: false
+      installExtraOSLevelPackages:
+        type: boolean
+        description: Toggle to install extra OS-level packages after make install.
+        default: false
+        required: false
+      extraOsLevelPackagesToInstall:
+        type: string
+        description: "Comma-separated list of OS packages to install (e.g., 'curl,wget,vim')."
+        required: false
 
 jobs:
   quality_checks:
@@ -112,6 +121,17 @@ jobs:
       - name: make install
         run: |
           make install
+
+      - name: Install extra OS-level packages
+        if: ${{ inputs.installExtraOSLevelPackages }}
+        run: |
+          sudo apt-get update
+          IFS=',' read -ra PACKAGES <<< "${{ inputs.extraOsLevelPackagesToInstall }}"
+          for package in "${PACKAGES[@]}"; do
+            package=$(echo "$package" | xargs)  # Trim whitespace
+            echo "Installing package: $package"
+            sudo apt-get install -y "$package"
+          done
 
       - name: Check if project uses Poetry
         id: check_poetry
