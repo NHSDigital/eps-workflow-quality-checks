@@ -124,9 +124,11 @@ jobs:
 
       - name: Install extra OS-level packages
         if: ${{ inputs.installExtraOSLevelPackages }}
+        env:
+          PACKAGES_TO_INSTALL: ${{ inputs.extraOsLevelPackagesToInstall }}
         run: |
           sudo apt-get update
-          IFS=',' read -ra PACKAGES <<< "${{ inputs.extraOsLevelPackagesToInstall }}"
+          IFS=',' read -ra PACKAGES <<< "$PACKAGES_TO_INSTALL"
           for package in "${PACKAGES[@]}"; do
             package=$(echo "$package" | xargs)  # Trim whitespace
             echo "Installing package: $package"
@@ -324,7 +326,7 @@ jobs:
       - name: Download terraform plans
         uses: actions/download-artifact@v5
         with:
-          pattern: '*_terraform_plan'
+          pattern: "*_terraform_plan"
           path: terraform_plans/
           merge-multiple: true
 
@@ -339,7 +341,7 @@ jobs:
             ls -l terraform_plans/
             echo "terraform_plans_exist=true" >> "$GITHUB_OUTPUT"
           fi
-      
+
       - name: Run cfn-guard script for terraform plans
         if: steps.check_terraform_plans.outputs.terraform_plans_exist == 'true'
         run: |
