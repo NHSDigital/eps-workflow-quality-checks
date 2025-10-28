@@ -349,7 +349,7 @@ jobs:
           path: cfn_guard_output
 
       - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@efc65411a5d69d617c9ba15d633a18f7b9896859
+        uses: NHSDigital/eps-action-sbom@aaf8c4d1eca609b73ac625e0d5087beebb50de5a
 
       - name: "check is SONAR_TOKEN exists"
         env:
