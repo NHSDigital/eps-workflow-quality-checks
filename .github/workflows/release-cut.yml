@@ -1,0 +1,1026 @@
+name: Release Cut
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_account_resources:
+        description: 'Deploy electronic-prescription-service-account-resources'
+        required: true
+        type: boolean
+        default: false
+      deploy_fhir_validator:
+        description: 'Deploy eps-FHIR-validator-lambda'
+        required: true
+        type: boolean
+        default: false
+      deploy_prescriptions_for_patients:
+        description: 'Deploy prescriptionsforpatients'
+        required: true
+        type: boolean
+        default: false
+      deploy_clinical_prescription_tracker:
+        description: 'Deploy electronic-prescription-service-clinical-prescription-tracker'
+        required: true
+        type: boolean
+        default: false
+      deploy_prescription_tracker_ui:
+        description: 'Deploy eps-prescription-tracker-ui'
+        required: true
+        type: boolean
+        default: false
+      deploy_prescription_status_update_api:
+        description: 'Deploy eps-prescription-status-update-api'
+        required: true
+        type: boolean
+        default: false
+      deploy_aws_dashboards:
+        description: 'Deploy eps-aws-dashboards'
+        required: true
+        type: boolean
+        default: false
+      deploy_vpc_resources:
+        description: 'Deploy eps-vpc-resources'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  # Job to trigger account-resources deployment
+  deploy_account_resources:
+    if: ${{ inputs.deploy_account_resources }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for electronic-prescription-service-account-resources"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/electronic-prescription-service-account-resources \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/electronic-prescription-service-account-resources \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          # Construct the run URL
+          run_url="https://github.com/NHSDigital/electronic-prescription-service-account-resources/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/electronic-prescription-service-account-resources"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger FHIR validator deployment
+  deploy_fhir_validator:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_fhir_validator }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for eps-FHIR-validator-lambda"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/eps-FHIR-validator-lambda \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/eps-FHIR-validator-lambda \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/eps-FHIR-validator-lambda/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/eps-FHIR-validator-lambda"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger prescriptionsforpatients deployment
+  deploy_prescriptions_for_patients:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_prescriptions_for_patients }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for prescriptionsforpatients"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/prescriptionsforpatients \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/prescriptionsforpatients \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/prescriptionsforpatients/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/prescriptionsforpatients"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger clinical prescription tracker deployment
+  deploy_clinical_prescription_tracker:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_clinical_prescription_tracker }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for electronic-prescription-service-clinical-prescription-tracker"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/electronic-prescription-service-clinical-prescription-tracker \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/electronic-prescription-service-clinical-prescription-tracker \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/electronic-prescription-service-clinical-prescription-tracker/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/electronic-prescription-service-clinical-prescription-tracker"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger prescription tracker UI deployment
+  deploy_prescription_tracker_ui:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_prescription_tracker_ui }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for eps-prescription-tracker-ui"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/eps-prescription-tracker-ui \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/eps-prescription-tracker-ui \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/eps-prescription-tracker-ui/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/eps-prescription-tracker-ui"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger prescription status update API deployment
+  deploy_prescription_status_update_api:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_prescription_status_update_api }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for eps-prescription-status-update-api"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/eps-prescription-status-update-api \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/eps-prescription-status-update-api \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/eps-prescription-status-update-api/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/eps-prescription-status-update-api"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger AWS dashboards deployment
+  deploy_aws_dashboards:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_aws_dashboards }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for eps-aws-dashboards"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/eps-aws-dashboards \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/eps-aws-dashboards \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/eps-aws-dashboards/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/eps-aws-dashboards"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Job to trigger VPC resources deployment
+  deploy_vpc_resources:
+    needs: [deploy_account_resources]
+    if: ${{ inputs.deploy_vpc_resources }}
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      run_url: ${{ steps.trigger.outputs.run_url }}
+    steps:
+      - name: Trigger release workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Triggering release workflow for eps-vpc-resources"
+
+          # Trigger the workflow
+          gh workflow run release.yml \
+            --repo NHSDigital/eps-vpc-resources \
+            --ref main
+
+          # Wait for the run to appear
+          sleep 5
+
+          # Get the most recent run ID
+          run_id=$(gh run list \
+            --repo NHSDigital/eps-vpc-resources \
+            --workflow=release.yml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          run_url="https://github.com/NHSDigital/eps-vpc-resources/actions/runs/${run_id}"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+          echo "Workflow triggered: ${run_url}"
+
+      - name: Wait for version tag and INT deployment
+        id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="NHSDigital/eps-vpc-resources"
+          run_id="${{ steps.trigger.outputs.run_id }}"
+
+          echo "Waiting for tag_release job to complete..."
+
+          # Poll for tag_release job completion
+          max_attempts=60
+          attempt=0
+          tag_release_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            tag_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name == "tag_release") | .status')
+
+            if [ "$tag_status" == "completed" ]; then
+              tag_release_complete=true
+              echo "✓ tag_release job completed"
+              break
+            fi
+
+            echo "Waiting for tag_release... (attempt $((attempt+1))/$max_attempts)"
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+          if [ "$tag_release_complete" != "true" ]; then
+            echo "ERROR: tag_release job did not complete in time"
+            exit 1
+          fi
+
+          # Get the version tag
+          version=$(gh api "/repos/${repo}/tags" --jq '.[0].name')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${version}"
+
+          echo ""
+          echo "Waiting for INT environment deployment to complete..."
+
+          # Poll for INT deployment completion
+          attempt=0
+          int_complete=false
+
+          while [ $attempt -lt $max_attempts ]; do
+            # Check for jobs containing "int" in the name (but not "int_sandbox")
+            int_status=$(gh api "/repos/${repo}/actions/runs/${run_id}/jobs" \
+              --jq '.jobs[] | select(.name | test(".*_int$|^release_int$")) | select(.status == "completed") | .name' | head -n 1)
+
+            if [ -n "$int_status" ]; then
+              int_complete=true
+              echo "✓ INT deployment completed: $int_status"
+              break
+            fi
+
+            echo "Waiting for INT deployment... (attempt $((attempt+1))/$max_attempts)"
+            sleep 15
+            attempt=$((attempt+1))
+          done
+
+          if [ "$int_complete" != "true" ]; then
+            echo "WARNING: INT deployment did not complete in expected time"
+            echo "Pipeline will continue to PROD independently"
+          fi
+
+          echo ""
+          echo "✓ Release Cut monitoring complete for this service"
+          echo "Pipeline continues independently: ${{ steps.trigger.outputs.run_url }}"
+
+  # Summary job to collect all results
+  release_summary:
+    needs:
+      - deploy_account_resources
+      - deploy_fhir_validator
+      - deploy_prescriptions_for_patients
+      - deploy_clinical_prescription_tracker
+      - deploy_prescription_tracker_ui
+      - deploy_prescription_status_update_api
+      - deploy_aws_dashboards
+      - deploy_vpc_resources
+    if: always()
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Generate release summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          # Release Cut Summary
+
+          ## Deployed Services
+
+          | Service | Version | Pipeline URL |
+          |---------|---------|--------------|
+          EOF
+
+          # Account Resources
+          if [ "${{ inputs.deploy_account_resources }}" == "true" ]; then
+            echo "| Account Resources | ${{ needs.deploy_account_resources.outputs.version }} | ${{ needs.deploy_account_resources.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # FHIR Validator
+          if [ "${{ inputs.deploy_fhir_validator }}" == "true" ]; then
+            echo "| FHIR Validator Lambda | ${{ needs.deploy_fhir_validator.outputs.version }} | ${{ needs.deploy_fhir_validator.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Prescriptions for Patients
+          if [ "${{ inputs.deploy_prescriptions_for_patients }}" == "true" ]; then
+            echo "| Prescriptions for Patients | ${{ needs.deploy_prescriptions_for_patients.outputs.version }} | ${{ needs.deploy_prescriptions_for_patients.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Clinical Prescription Tracker
+          if [ "${{ inputs.deploy_clinical_prescription_tracker }}" == "true" ]; then
+            echo "| Clinical Prescription Tracker | ${{ needs.deploy_clinical_prescription_tracker.outputs.version }} | ${{ needs.deploy_clinical_prescription_tracker.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Prescription Tracker UI
+          if [ "${{ inputs.deploy_prescription_tracker_ui }}" == "true" ]; then
+            echo "| Prescription Tracker UI | ${{ needs.deploy_prescription_tracker_ui.outputs.version }} | ${{ needs.deploy_prescription_tracker_ui.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Prescription Status Update API
+          if [ "${{ inputs.deploy_prescription_status_update_api }}" == "true" ]; then
+            echo "| Prescription Status Update API | ${{ needs.deploy_prescription_status_update_api.outputs.version }} | ${{ needs.deploy_prescription_status_update_api.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # AWS Dashboards
+          if [ "${{ inputs.deploy_aws_dashboards }}" == "true" ]; then
+            echo "| AWS Dashboards | ${{ needs.deploy_aws_dashboards.outputs.version }} | ${{ needs.deploy_aws_dashboards.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # VPC Resources
+          if [ "${{ inputs.deploy_vpc_resources }}" == "true" ]; then
+            echo "| VPC Resources | ${{ needs.deploy_vpc_resources.outputs.version }} | ${{ needs.deploy_vpc_resources.outputs.run_url }} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+
+          ---
+          **Release Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          EOF
+
+      - name: Output results for change log
+        run: |
+          echo "Release Cut Results:"
+          echo "===================="
+
+          if [ "${{ inputs.deploy_account_resources }}" == "true" ]; then
+            echo "Account Resources: ${{ needs.deploy_account_resources.outputs.version }} - ${{ needs.deploy_account_resources.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_fhir_validator }}" == "true" ]; then
+            echo "FHIR Validator Lambda: ${{ needs.deploy_fhir_validator.outputs.version }} - ${{ needs.deploy_fhir_validator.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_prescriptions_for_patients }}" == "true" ]; then
+            echo "Prescriptions for Patients: ${{ needs.deploy_prescriptions_for_patients.outputs.version }} - ${{ needs.deploy_prescriptions_for_patients.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_clinical_prescription_tracker }}" == "true" ]; then
+            echo "Clinical Prescription Tracker: ${{ needs.deploy_clinical_prescription_tracker.outputs.version }} - ${{ needs.deploy_clinical_prescription_tracker.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_prescription_tracker_ui }}" == "true" ]; then
+            echo "Prescription Tracker UI: ${{ needs.deploy_prescription_tracker_ui.outputs.version }} - ${{ needs.deploy_prescription_tracker_ui.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_prescription_status_update_api }}" == "true" ]; then
+            echo "Prescription Status Update API: ${{ needs.deploy_prescription_status_update_api.outputs.version }} - ${{ needs.deploy_prescription_status_update_api.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_aws_dashboards }}" == "true" ]; then
+            echo "AWS Dashboards: ${{ needs.deploy_aws_dashboards.outputs.version }} - ${{ needs.deploy_aws_dashboards.outputs.run_url }}"
+          fi
+
+          if [ "${{ inputs.deploy_vpc_resources }}" == "true" ]; then
+            echo "VPC Resources: ${{ needs.deploy_vpc_resources.outputs.version }} - ${{ needs.deploy_vpc_resources.outputs.run_url }}"
+          fi
