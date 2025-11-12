@@ -143,6 +143,58 @@ jobs:
             echo "uses_java=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check licenses (Makefile)
+        run: |
+          make check-licenses
+
+      - name: Run code lint
+        run: make lint
+
+      - name: actionlint
+        uses: raven-actions/actionlint@3a24062651993d40fed1019b58ac6fbdfbf276cc
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38
+        with:
+          ignore_paths: >-
+            *test*
+            .venv
+            node_modules
+            .git
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Generate and check SBOMs
+        uses: NHSDigital/eps-action-sbom@ae6916d542c092ec1636f9a0ba14464ba25a97d1
+
+      - name: "check is SONAR_TOKEN exists"
+        env:
+          super_secret: ${{ secrets.SONAR_TOKEN }}
+        if: ${{ env.super_secret != '' && inputs.run_sonar == true }}
+        run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
+
+      - name: Run SonarQube analysis
+        if: ${{ steps.check_java.outputs.uses_java == 'true' && env.SONAR_TOKEN_EXISTS == 'true' }}
+        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        if: ${{ steps.check_java.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # CloudFormation validation (runs only if templates exist, ~3-5 minutes)
+  cloudformation-validation:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+          fetch-depth: 0
+
       - name: Check for SAM templates
         id: check_sam_templates
         run: |
@@ -188,34 +240,12 @@ jobs:
             echo "cdk_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check licenses (Makefile)
-        run: |
-          make check-licenses
-
-      - name: Run code lint
-        run: make lint
-
-      - name: actionlint
-        uses: raven-actions/actionlint@3a24062651993d40fed1019b58ac6fbdfbf276cc
-
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38
-        with:
-          ignore_paths: >-
-            *test*
-            .venv
-            node_modules
-            .git
-
       - name: Run cfn-lint
         if: steps.check_sam_templates.outputs.sam_exists == 'true' || steps.check_cf_templates.outputs.cf_exists == 'true'
         run: |
           pip install cfn-lint
           cfn-lint -I "cloudformation/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
           cfn-lint -I "SAMtemplates/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
-
-      - name: Run unit tests
-        run: make test
 
       - name: Run cdk-synth
         if: steps.check_cdk.outputs.cdk_exists == 'true'
@@ -347,23 +377,3 @@ jobs:
         with:
           name: cfn_guard_output
           path: cfn_guard_output
-
-      - name: Generate and check SBOMs
-        uses: NHSDigital/eps-action-sbom@ae6916d542c092ec1636f9a0ba14464ba25a97d1
-
-      - name: "check is SONAR_TOKEN exists"
-        env:
-          super_secret: ${{ secrets.SONAR_TOKEN }}
-        if: ${{ env.super_secret != '' && inputs.run_sonar == true }}
-        run: echo "SONAR_TOKEN_EXISTS=true" >> "$GITHUB_ENV"
-
-      - name: Run SonarQube analysis
-        if: ${{ steps.check_java.outputs.uses_java == 'true' && env.SONAR_TOKEN_EXISTS == 'true' }}
-        run: mvn sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
-        if: ${{ steps.check_java.outputs.uses_java == 'false' && env.SONAR_TOKEN_EXISTS == 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
