@@ -1,11 +1,25 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
-
+# provide DOCKER_GID via build args if you need to force group id to match host
+ARG DOCKER_GID
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
 
 ARG ASDF_VERSION
 COPY .tool-versions.asdf /tmp/.tool-versions.asdf
+
+# specify DOCKER_GID to force container docker group id to match host
+RUN if [ -n "${DOCKER_GID}" ]; then \
+      if ! getent group docker; then \
+        groupadd -g ${DOCKER_GID} docker; \
+      else \
+        groupmod -g ${DOCKER_GID} docker; \
+      fi && \
+      usermod -aG docker vscode; \
+    fi
+
+# Anticipate and resolve potential permission issues with apt
+RUN mkdir -p /tmp && chmod 1777 /tmp
 
 RUN apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
@@ -53,10 +67,10 @@ USER vscode
 ENV PATH="$PATH:/home/vscode/.asdf/shims/:/workspaces/eps-prescription-tracker-ui/node_modules/.bin:/workspaces/eps-workflow-quality-checks/.venv/bin"
 
 # Install ASDF plugins#
-RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git; \
-    asdf plugin add actionlint; \
-    asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git; \
-    asdf plugin add poetry https://github.com/asdf-community/asdf-poetry.git; \
+RUN asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git && \
+    asdf plugin add actionlint && \
+    asdf plugin add shellcheck https://github.com/luizm/asdf-shellcheck.git && \
+    asdf plugin add poetry https://github.com/asdf-community/asdf-poetry.git && \
     asdf plugin add python
 
 WORKDIR /workspaces/eps-workflow-quality-checks
@@ -64,5 +78,5 @@ WORKDIR /workspaces/eps-workflow-quality-checks
 ADD .tool-versions /workspaces/eps-workflow-quality-checks/.tool-versions
 ADD .tool-versions /home/vscode/.tool-versions
 
-RUN asdf install python; \
-    asdf install;
+RUN asdf install python && \
+    asdf install
