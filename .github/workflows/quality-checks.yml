@@ -110,7 +110,6 @@ jobs:
           echo "@nhsdigital:registry=https://npm.pkg.github.com" >> ~/.npmrc
 
       - name: Cache npm dependencies
-        if: steps.check_cdk.outputs.cdk_exists == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.npm
