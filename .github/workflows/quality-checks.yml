@@ -265,6 +265,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: Setting up .npmrc
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          echo "@nhsdigital:registry=https://npm.pkg.github.com" >> ~/.npmrc
+
       - name: make install NodeJS
         if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
