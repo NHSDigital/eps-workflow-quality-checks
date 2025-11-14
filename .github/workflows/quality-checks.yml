@@ -265,10 +265,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: make install
+      - name: make install NodeJS
         if: steps.check_cdk.outputs.cdk_exists == 'true'
         run: |
-          make install
+          make install-node
 
       - name: Run cdk-synth
         if: steps.check_cdk.outputs.cdk_exists == 'true'
