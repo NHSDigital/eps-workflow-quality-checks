@@ -109,6 +109,15 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           echo "@nhsdigital:registry=https://npm.pkg.github.com" >> ~/.npmrc
 
+      - name: Cache npm dependencies
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: make install
         run: |
           make install
@@ -246,6 +255,20 @@ jobs:
           pip install cfn-lint
           cfn-lint -I "cloudformation/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
           cfn-lint -I "SAMtemplates/**/*.y*ml" 2>&1 | awk '/Run scan/ { print } /^[EW][0-9]/ { print; getline; print }'
+
+      - name: Cache npm dependencies
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: make install
+        if: steps.check_cdk.outputs.cdk_exists == 'true'
+        run: |
+          make install
 
       - name: Run cdk-synth
         if: steps.check_cdk.outputs.cdk_exists == 'true'
